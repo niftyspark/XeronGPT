@@ -201,6 +201,36 @@ async function* processOpenAIStream(apiMessages: any[], model: string, tools?: a
             content: `Error executing tool: ${e instanceof Error ? e.message : String(e)}`
           });
         }
+      } else {
+        // Assume it's a Composio tool
+        try {
+          const args = JSON.parse(tc.function.arguments);
+          yield `\n*Executing ${tc.function.name}...*\n`;
+          const response = await fetch('/api/composio/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: tc.function.name, parameters: args })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Composio execution failed: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          apiMessages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            name: tc.function.name,
+            content: JSON.stringify(result)
+          });
+        } catch (e) {
+          apiMessages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            name: tc.function.name,
+            content: `Error executing tool: ${e instanceof Error ? e.message : String(e)}`
+          });
+        }
       }
     }
 
@@ -208,52 +238,7 @@ async function* processOpenAIStream(apiMessages: any[], model: string, tools?: a
   }
 }
 
-export async function generateAudio(text: string): Promise<string | null> {
-  const apiKey = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-  if (!apiKey) {
-    console.error("Hugging Face API key not found for TTS. Please set VITE_HUGGINGFACE_API_KEY.");
-    return null;
-  }
-  
-  try {
-    // Using a fast and reliable TTS model from Hugging Face
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/facebook/mms-tts-eng",
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({ inputs: text }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Hugging Face API error: ${response.statusText}`);
-    }
-
-    const audioBlob = await response.blob();
-    
-    // Convert blob to base64
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
-        // Extract just the base64 part
-        const base64 = base64data.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(audioBlob);
-    });
-  } catch (error) {
-    console.error("Error generating audio from Hugging Face:", error);
-    return null;
-  }
-}
-
-export async function* streamChat(messages: AppMessage[], model: string, webSearch: boolean, liveBrowser: boolean = false) {
+export async function* streamChat(messages: AppMessage[], model: string, webSearch: boolean, liveBrowser: boolean = false, composioEnabled: boolean = false) {
   const apiMessages = messages.map(m => {
     if (m.attachments && m.attachments.length > 0) {
       const contentParts: any[] = [];
@@ -270,12 +255,6 @@ export async function* streamChat(messages: AppMessage[], model: string, webSear
       return { role: m.role, content: contentParts };
     }
     return { role: m.role, content: m.content };
-  });
-
-  // Add a system prompt for a fun, conversational tone
-  apiMessages.unshift({
-    role: 'system',
-    content: 'You are a fun, lively, and expressive 3D character assistant. Keep your responses engaging, slightly playful, and conversational, as if you are talking out loud. Use a friendly and upbeat tone.'
   });
 
   if (webSearch) {
@@ -296,14 +275,16 @@ export async function* streamChat(messages: AppMessage[], model: string, webSear
 
   let tools: any[] | undefined = undefined;
   
-  if (liveBrowser) {
-    apiMessages.unshift({
-      role: 'system',
-      content: 'You are an AI assistant with access to a live web browser. You can read specific URLs to gather information. Always provide accurate, up-to-date information by browsing the web when necessary. If a user asks you to read a specific URL, use the browseUrl tool.'
-    });
+  if (liveBrowser || composioEnabled) {
+    tools = [];
     
-    tools = [
-      {
+    if (liveBrowser) {
+      apiMessages.unshift({
+        role: 'system',
+        content: 'You are an AI assistant with access to a live web browser. You can read specific URLs to gather information. Always provide accurate, up-to-date information by browsing the web when necessary. If a user asks you to read a specific URL, use the browseUrl tool.'
+      });
+      
+      tools.push({
         type: "function",
         function: {
           name: "browseUrl",
@@ -319,8 +300,34 @@ export async function* streamChat(messages: AppMessage[], model: string, webSear
             required: ["url"]
           }
         }
+      });
+    }
+
+    if (composioEnabled) {
+      try {
+        const response = await fetch('/api/composio/tools');
+        if (response.ok) {
+          const composioTools = await response.json();
+          // Map Composio tools to OpenAI function format
+          const formattedTools = composioTools.map((tool: any) => ({
+            type: "function",
+            function: {
+              name: tool.name,
+              description: tool.description,
+              parameters: tool.parameters
+            }
+          }));
+          tools.push(...formattedTools);
+          
+          apiMessages.unshift({
+            role: 'system',
+            content: 'You have access to social media toolkits via Composio. You can perform actions on Twitter, LinkedIn, Instagram, Facebook, and Reddit. Use these tools when requested by the user.'
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch Composio tools:", error);
       }
-    ];
+    }
   }
 
   yield* processOpenAIStream(apiMessages, model, tools);
