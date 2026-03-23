@@ -95,7 +95,7 @@ export async function handleFileUpload(file: File): Promise<{ type: 'image' | 't
   });
 }
 
-async function* processOpenAIStream(apiMessages: any[], model: string, tools?: any[]): AsyncGenerator<string, void, unknown> {
+async function* processOpenAIStream(apiMessages: any[], model: string, tools?: any[], signal?: AbortSignal): AsyncGenerator<string, void, unknown> {
   const body: any = {
     model,
     messages: apiMessages,
@@ -112,7 +112,8 @@ async function* processOpenAIStream(apiMessages: any[], model: string, tools?: a
       'Authorization': `Bearer ${API_KEY}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal
   });
 
   if (!response.ok) {
@@ -204,11 +205,11 @@ async function* processOpenAIStream(apiMessages: any[], model: string, tools?: a
       }
     }
 
-    yield* processOpenAIStream(apiMessages, model, tools);
+    yield* processOpenAIStream(apiMessages, model, tools, signal);
   }
 }
 
-export async function* streamChat(messages: AppMessage[], model: string, webSearch: boolean, liveBrowser: boolean = false) {
+export async function* streamChat(messages: AppMessage[], model: string, webSearch: boolean, liveBrowser: boolean = false, signal?: AbortSignal) {
   const apiMessages = messages.map(m => {
     if (m.attachments && m.attachments.length > 0) {
       const contentParts: any[] = [];
@@ -272,5 +273,5 @@ export async function* streamChat(messages: AppMessage[], model: string, webSear
     ];
   }
 
-  yield* processOpenAIStream(apiMessages, model, tools);
+  yield* processOpenAIStream(apiMessages, model, tools, signal);
 }

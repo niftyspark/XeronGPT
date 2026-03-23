@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush } from 'lucide-react';
+import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush, Monitor } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { streamChat, MODELS, AppMessage, handleFileUpload, Attachment } from './api';
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, DbMessage } from './db';
+import Canvas from './components/Canvas';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -23,6 +24,7 @@ export default function App() {
   const [liveBrowser, setLiveBrowser] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -489,6 +491,13 @@ export default function App() {
                     <Compass size={20} />
                     {liveBrowser && <span className="text-xs font-medium pr-1">Browser Agent</span>}
                   </button>
+                  <button 
+                    onClick={() => setIsCanvasOpen(true)}
+                    className="p-2 rounded-full text-zinc-400 hover:text-lime-400 hover:bg-lime-400/10 transition-colors flex items-center gap-2"
+                    title="Live Code Canvas"
+                  >
+                    <Monitor size={20} />
+                  </button>
                 </div>
                 
                 <button
@@ -506,6 +515,13 @@ export default function App() {
           </div>
         </div>
       </div>
+      {isCanvasOpen && (
+        <Canvas 
+          onClose={() => setIsCanvasOpen(false)} 
+          user={user} 
+          initialModel={model} 
+        />
+      )}
     </div>
   );
 }
