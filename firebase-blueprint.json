@@ -1,0 +1,67 @@
+{
+  "entities": {
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A chat session between a user and the AI.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this conversation."
+        },
+        "title": {
+          "type": "string",
+          "description": "A short title for the conversation."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the conversation was created."
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "description": "When the conversation was last updated."
+        }
+      },
+      "required": ["userId", "title", "createdAt", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message within a conversation.",
+      "type": "object",
+      "properties": {
+        "conversationId": {
+          "type": "string",
+          "description": "The ID of the conversation this message belongs to."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "assistant", "system"],
+          "description": "The role of the message sender."
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the message was created."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this message."
+        }
+      },
+      "required": ["conversationId", "role", "content", "createdAt", "userId"]
+    }
+  },
+  "firestore": {
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "Stores user conversations."
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Stores messages for all conversations."
+    }
+  }
+}
