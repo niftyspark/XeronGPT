@@ -184,7 +184,7 @@ export default function Canvas({ onClose, user, initialModel }: CanvasProps) {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Chat Sidebar */}
         <div className={`${isSidebarOpen ? 'w-[400px]' : 'w-0'} transition-all duration-300 border-r border-white/10 flex flex-col bg-[#0d0d0d] relative z-10`}>
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
                 <div className="w-16 h-16 rounded-2xl bg-lime-400/10 flex items-center justify-center mb-4 border border-lime-400/20">
@@ -206,7 +206,7 @@ export default function Canvas({ onClose, user, initialModel }: CanvasProps) {
                       ) : (
                         <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-sm">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {msg.content.replace(/```(?:html|xml|javascript|css)?\s*([\s\S]*?)```/gi, '*[Code generated and applied to canvas]*')}
+                            {msg.content.replace(/```[\s\S]*?(?:```|$)/gi, '*[Code generated and applied to canvas]*')}
                           </ReactMarkdown>
                         </div>
                       )}
