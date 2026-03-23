@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush, Share2 } from 'lucide-react';
+import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { streamChat, MODELS, AppMessage, handleFileUpload, Attachment } from './api';
@@ -21,7 +21,6 @@ export default function App() {
   const [model, setModel] = useState(MODELS[0].id);
   const [webSearch, setWebSearch] = useState(false);
   const [liveBrowser, setLiveBrowser] = useState(false);
-  const [composioEnabled, setComposioEnabled] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
@@ -146,7 +145,7 @@ export default function App() {
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', isStreaming: true }]);
 
     try {
-      const stream = streamChat([...messages, newUserMsg], model, webSearch, liveBrowser, composioEnabled);
+      const stream = streamChat([...messages, newUserMsg], model, webSearch, liveBrowser);
       let fullContent = '';
       for await (const chunk of stream) {
         fullContent += chunk;
@@ -489,20 +488,6 @@ export default function App() {
                   >
                     <Compass size={20} />
                     {liveBrowser && <span className="text-xs font-medium pr-1">Browser Agent</span>}
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setComposioEnabled(!composioEnabled);
-                      if (!composioEnabled) {
-                        setWebSearch(false);
-                        setLiveBrowser(false);
-                      }
-                    }}
-                    className={`p-2 rounded-full transition-colors flex items-center gap-2 ${composioEnabled ? 'text-purple-400 bg-purple-400/10' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700'}`}
-                    title="Social Media Tools (Composio)"
-                  >
-                    <Share2 size={20} />
-                    {composioEnabled && <span className="text-xs font-medium pr-1">Social Tools</span>}
                   </button>
                 </div>
                 

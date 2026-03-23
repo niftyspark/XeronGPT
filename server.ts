@@ -3,11 +3,6 @@ import { createServer as createViteServer } from "vite";
 import * as cheerio from "cheerio";
 import cors from "cors";
 import path from "path";
-import { Composio } from "composio-core";
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY
-});
 
 async function startServer() {
   const app = express();
@@ -77,36 +72,6 @@ async function startServer() {
     } catch (error: any) {
       console.error("Browse error:", error);
       res.status(500).json({ error: error.message || "Failed to browse URL" });
-    }
-  });
-
-  app.get("/api/composio/tools", async (req, res) => {
-    try {
-      // Filter for social media apps
-      const socialMediaApps = "twitter,linkedin,instagram,facebook,reddit";
-      const response = await composio.actions.list({
-        apps: socialMediaApps
-      });
-      res.json(response.items);
-    } catch (error: any) {
-      console.error("Composio tools error:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch Composio tools" });
-    }
-  });
-
-  app.post("/api/composio/execute", async (req, res) => {
-    try {
-      const { action, parameters } = req.body;
-      const result = await composio.actions.execute({
-        actionName: action,
-        requestBody: {
-          input: parameters
-        }
-      });
-      res.json(result);
-    } catch (error: any) {
-      console.error("Composio execution error:", error);
-      res.status(500).json({ error: error.message || "Failed to execute Composio action" });
     }
   });
 
