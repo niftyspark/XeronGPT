@@ -1,4 +1,4 @@
-const API_KEY = 'f0750ba86ebae58e583d0536ebc22d41';
+const API_KEY = import.meta.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
 const BASE_URL = 'https://ai.api.4everland.org/api/v1/chat/completions';
 
 export const MODELS = [
