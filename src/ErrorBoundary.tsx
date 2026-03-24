@@ -27,9 +27,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       let errorMessage = this.state.error?.message || 'An unknown error occurred';
       try {
-        const parsedError = JSON.parse(errorMessage);
-        if (parsedError.error) {
-          errorMessage = parsedError.error;
+        if (errorMessage !== 'undefined') {
+          const parsedError = JSON.parse(errorMessage);
+          if (parsedError.error) {
+            errorMessage = parsedError.error;
+          }
         }
       } catch (e) {
         // Not a JSON error, use as is

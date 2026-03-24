@@ -434,7 +434,7 @@ export default function App() {
                     
                     {/* Message Content */}
                     {msg.content && (
-                      <div className={`px-5 py-3.5 rounded-3xl ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-transparent text-zinc-100'}`}>
+                      <div className={`px-5 py-3.5 rounded-3xl ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
                         {msg.role === 'user' ? (
                           <div className="whitespace-pre-wrap">{msg.content}</div>
                         ) : (
@@ -446,7 +446,7 @@ export default function App() {
                             >
                               <Copy size={16} />
                             </button>
-                            <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl">
+                            <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-loose prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{

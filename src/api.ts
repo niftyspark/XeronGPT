@@ -147,7 +147,8 @@ async function* processOpenAIStream(apiMessages: any[], model: string, tools?: a
             const delta = data.choices[0].delta;
             
             if (delta.content) {
-              yield delta.content;
+              const filteredContent = delta.content.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/\*Browsing.*?\*/g, '');
+              yield filteredContent;
             }
             
             if (delta.tool_calls) {
@@ -186,7 +187,6 @@ async function* processOpenAIStream(apiMessages: any[], model: string, tools?: a
       if (tc.function.name === 'browseUrl') {
         try {
           const args = JSON.parse(tc.function.arguments);
-          yield `\n*Browsing ${args.url}...*\n`;
           const browseResult = await browseUrl(args.url);
           apiMessages.push({
             role: 'tool',
