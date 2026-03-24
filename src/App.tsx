@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush, Monitor } from 'lucide-react';
+import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush, Monitor, Clock, BookOpen, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { streamChat, MODELS, AppMessage, handleFileUpload, Attachment } from './api';
@@ -7,6 +7,7 @@ import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, DbMessage } from './db';
 import Canvas from './components/Canvas';
+import { TaskScheduler } from './components/TaskScheduler';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -19,11 +20,14 @@ export default function App() {
   const [messages, setMessages] = useState<AppMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [model, setModel] = useState(MODELS[0].id);
   const [webSearch, setWebSearch] = useState(false);
   const [liveBrowser, setLiveBrowser] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -51,8 +55,8 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
-    if (currentConversationId) {
-      const unsubscribe = subscribeToMessages(currentConversationId, (dbMsgs) => {
+    if (currentConversationId && user) {
+      const unsubscribe = subscribeToMessages(currentConversationId, user.uid, (dbMsgs) => {
         const appMsgs: AppMessage[] = dbMsgs.map(m => ({
           id: m.id,
           role: m.role,
@@ -64,7 +68,7 @@ export default function App() {
     } else {
       setMessages([]);
     }
-  }, [currentConversationId]);
+  }, [currentConversationId, user]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -126,6 +130,7 @@ export default function App() {
     if ((!input.trim() && attachments.length === 0) || isLoading || !user) return;
 
     setIsLoading(true);
+    abortControllerRef.current = new AbortController();
     const currentInput = input;
     const currentAttachments = [...attachments];
 
@@ -158,7 +163,7 @@ export default function App() {
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', isStreaming: true }]);
 
     try {
-      const stream = streamChat([...messages, newUserMsg], model, webSearch, liveBrowser);
+      const stream = streamChat([...messages, newUserMsg], model, webSearch, liveBrowser, abortControllerRef.current.signal);
       let fullContent = '';
       for await (const chunk of stream) {
         fullContent += chunk;
@@ -171,14 +176,18 @@ export default function App() {
       // Save assistant message to DB
       await saveMessage(convoId, user.uid, 'assistant', fullContent);
     } catch (error: any) {
-      console.error(error);
-      const errorMsg = `**Error:** ${error.message}`;
-      setMessages(prev => [...prev, { 
-        id: (Date.now() + 2).toString(), 
-        role: 'assistant', 
-        content: errorMsg 
-      }]);
-      await saveMessage(convoId, user.uid, 'assistant', errorMsg);
+      if (error.name === 'AbortError') {
+        console.log('Generation aborted');
+      } else {
+        console.error(error);
+        const errorMsg = `**Error:** ${error.message}`;
+        setMessages(prev => [...prev, { 
+          id: (Date.now() + 2).toString(), 
+          role: 'assistant', 
+          content: errorMsg 
+        }]);
+        await saveMessage(convoId, user.uid, 'assistant', errorMsg);
+      }
     } finally {
       setMessages(prev => prev.map(msg => 
         msg.id === assistantMsgId 
@@ -186,6 +195,15 @@ export default function App() {
           : msg
       ));
       setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -255,7 +273,7 @@ export default function App() {
 
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-[260px]' : 'w-0'} transition-all duration-300 flex-shrink-0 bg-black/40 backdrop-blur-xl border-r border-white/5 flex flex-col overflow-hidden z-20`}>
-        <div className="p-3 pb-0">
+        <div className="p-3 pb-0 space-y-1">
           <button 
             onClick={startNewChat}
             className="flex items-center gap-2 w-full p-2.5 rounded-lg hover:bg-lime-400/10 hover:text-lime-400 transition-colors text-sm font-medium group"
@@ -265,43 +283,70 @@ export default function App() {
             </div>
             New Chat
           </button>
+          <button 
+            onClick={() => setIsSchedulerOpen(true)}
+            className="flex items-center gap-2 w-full p-2.5 rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium group text-zinc-400"
+          >
+            <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center">
+              <Clock size={16} />
+            </div>
+            Task Schedule
+          </button>
         </div>
         
-        <div className="px-3 py-2">
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input 
-              type="text" 
-              placeholder="Search chats..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-800 text-sm text-zinc-200 rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-600"
-            />
-          </div>
-        </div>
+        <div className="flex-1"></div>
 
-        <div className="flex-1 overflow-y-auto p-3 pt-0 space-y-1 no-scrollbar">
-          {filteredConversations.map(convo => (
-            <div 
-              key={convo.id}
-              onClick={() => setCurrentConversationId(convo.id)}
-              className={`flex items-center justify-between w-full p-2 rounded-lg transition-colors text-sm text-left group cursor-pointer ${currentConversationId === convo.id ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}`}
-            >
-              <div className="flex items-center gap-2 overflow-hidden flex-1">
-                <MessageSquare size={16} className={`flex-shrink-0 ${currentConversationId === convo.id ? 'text-zinc-200' : 'text-zinc-500 group-hover:text-zinc-400'}`} />
-                <span className={`truncate ${currentConversationId === convo.id ? 'text-zinc-100' : 'text-zinc-400 group-hover:text-zinc-300'}`}>
-                  {convo.title}
-                </span>
+        {/* ... (rest of sidebar) */}
+        
+        {isSchedulerOpen && <TaskScheduler onClose={() => setIsSchedulerOpen(false)} />}
+
+        <div className="flex-1"></div>
+
+        <div className="p-3 space-y-1 border-t border-zinc-800">
+          <button 
+            onClick={() => setHistoryOpen(!historyOpen)}
+            className="flex items-center justify-between w-full p-2 text-sm font-medium text-zinc-400 hover:text-zinc-100"
+          >
+            Chat History
+            <ChevronDown size={16} className={`transition-transform ${historyOpen ? '' : 'rotate-180'}`} />
+          </button>
+          {historyOpen && (
+            <div className="mt-2 space-y-1 max-h-[300px] overflow-y-auto no-scrollbar">
+              <div className="px-2 pb-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input 
+                    type="text" 
+                    placeholder="Search chats..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-zinc-800 text-sm text-zinc-200 rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                  />
+                </div>
               </div>
-              <button
-                onClick={(e) => handleDeleteConversation(e, convo.id)}
-                className={`p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-400/10 transition-all ${currentConversationId === convo.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                title="Delete Chat"
-              >
-                <Trash2 size={14} className="flex-shrink-0" />
-              </button>
+              {filteredConversations.map(convo => (
+                <div 
+                  key={convo.id}
+                  onClick={() => setCurrentConversationId(convo.id)}
+                  className={`flex items-center justify-between w-full p-2 rounded-lg transition-colors text-sm text-left group cursor-pointer ${currentConversationId === convo.id ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}`}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    <MessageSquare size={16} className={`flex-shrink-0 ${currentConversationId === convo.id ? 'text-zinc-200' : 'text-zinc-500 group-hover:text-zinc-400'}`} />
+                    <span className={`truncate ${currentConversationId === convo.id ? 'text-zinc-100' : 'text-zinc-400 group-hover:text-zinc-300'}`}>
+                      {convo.title}
+                    </span>
+                  </div>
+                  <button
+                    onClick={(e) => handleDeleteConversation(e, convo.id)}
+                    className={`p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-400/10 transition-all ${currentConversationId === convo.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                    title="Delete Chat"
+                  >
+                    <Trash2 size={14} className="flex-shrink-0" />
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
         <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
@@ -393,10 +438,26 @@ export default function App() {
                         {msg.role === 'user' ? (
                           <div className="whitespace-pre-wrap">{msg.content}</div>
                         ) : (
-                          <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {msg.content}
-                            </ReactMarkdown>
+                          <div className="relative group">
+                            <button
+                              onClick={() => navigator.clipboard.writeText(msg.content)}
+                              className="absolute -top-10 right-0 p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Copy to clipboard"
+                            >
+                              <Copy size={16} />
+                            </button>
+                            <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  h1: ({node, ...props}) => <h1 className="text-lime-400 uppercase font-bold" {...props} />,
+                                  h2: ({node, ...props}) => <h2 className="text-lime-400 uppercase font-bold" {...props} />,
+                                  h3: ({node, ...props}) => <h3 className="text-lime-400 uppercase font-bold" {...props} />,
+                                }}
+                              >
+                                {msg.content}
+                              </ReactMarkdown>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -511,14 +572,20 @@ export default function App() {
                   >
                     <Monitor size={20} />
                   </button>
+                  <button 
+                    className="p-2 rounded-full text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 transition-colors flex items-center gap-2"
+                    title="Instructions"
+                  >
+                    <BookOpen size={20} />
+                  </button>
                 </div>
                 
                 <button
-                  onClick={handleSend}
-                  disabled={(!input.trim() && attachments.length === 0) || isLoading}
+                  onClick={isLoading ? stopGeneration : handleSend}
+                  disabled={(!input.trim() && attachments.length === 0 && !isLoading)}
                   className="p-2 rounded-full bg-lime-400 text-black hover:bg-lime-500 disabled:opacity-50 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:hover:bg-zinc-700 transition-colors flex items-center justify-center w-10 h-10"
                 >
-                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-0.5" />}
+                  {isLoading ? <X size={18} /> : <Send size={18} className="ml-0.5" />}
                 </button>
               </div>
             </div>

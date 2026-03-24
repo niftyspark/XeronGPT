@@ -61,6 +61,19 @@ export type Conversation = {
   updatedAt: Timestamp;
 };
 
+export type ScheduledTask = {
+  id?: string;
+  userId: string;
+  name: string;
+  frequency: string;
+  time: string;
+  timezone: string;
+  maxExecutions: number;
+  runContinuously: boolean;
+  content: string;
+  createdAt: Timestamp;
+};
+
 export type DbMessage = {
   id: string;
   conversationId: string;
@@ -88,10 +101,11 @@ export function subscribeToConversations(userId: string, callback: (conversation
   });
 }
 
-export function subscribeToMessages(conversationId: string, callback: (messages: DbMessage[]) => void) {
+export function subscribeToMessages(conversationId: string, userId: string, callback: (messages: DbMessage[]) => void) {
   const q = query(
     collection(db, 'messages'),
-    where('conversationId', '==', conversationId)
+    where('conversationId', '==', conversationId),
+    where('userId', '==', userId)
   );
   
   return onSnapshot(q, (snapshot) => {
@@ -166,5 +180,16 @@ export async function deleteConversation(conversationId: string) {
     await deleteDoc(doc(db, 'conversations', conversationId));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `conversations/${conversationId}`);
+  }
+}
+
+export async function saveScheduledTask(task: Omit<ScheduledTask, 'id' | 'createdAt'>) {
+  try {
+    await addDoc(collection(db, 'scheduledTasks'), {
+      ...task,
+      createdAt: serverTimestamp()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, 'scheduledTasks');
   }
 }

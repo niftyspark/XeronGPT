@@ -104,7 +104,7 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      allow read: if isDocOwner();
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && 
                        isValidMessage() && 
                        uidUnchanged();
