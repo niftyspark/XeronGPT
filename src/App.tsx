@@ -104,9 +104,20 @@ export default function App() {
   const handleDeleteConversation = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this chat?")) {
-      await deleteConversation(id);
+      // Optimistic update
+      const previousConversations = [...conversations];
+      setConversations(prev => prev.filter(c => c.id !== id));
       if (currentConversationId === id) {
         startNewChat();
+      }
+
+      try {
+        await deleteConversation(id);
+      } catch (error) {
+        console.error("Failed to delete conversation:", error);
+        // Rollback
+        setConversations(previousConversations);
+        alert("Failed to delete conversation. Please try again.");
       }
     }
   };
@@ -271,23 +282,25 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto p-3 pt-0 space-y-1 no-scrollbar">
           {filteredConversations.map(convo => (
-            <button 
+            <div 
               key={convo.id}
               onClick={() => setCurrentConversationId(convo.id)}
-              className={`flex items-center justify-between w-full p-2 rounded-lg transition-colors text-sm text-left group ${currentConversationId === convo.id ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}`}
+              className={`flex items-center justify-between w-full p-2 rounded-lg transition-colors text-sm text-left group cursor-pointer ${currentConversationId === convo.id ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}`}
             >
-              <div className="flex items-center gap-2 overflow-hidden">
+              <div className="flex items-center gap-2 overflow-hidden flex-1">
                 <MessageSquare size={16} className={`flex-shrink-0 ${currentConversationId === convo.id ? 'text-zinc-200' : 'text-zinc-500 group-hover:text-zinc-400'}`} />
                 <span className={`truncate ${currentConversationId === convo.id ? 'text-zinc-100' : 'text-zinc-400 group-hover:text-zinc-300'}`}>
                   {convo.title}
                 </span>
               </div>
-              <Trash2 
-                size={14} 
+              <button
                 onClick={(e) => handleDeleteConversation(e, convo.id)}
-                className="flex-shrink-0 text-zinc-500 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all" 
-              />
-            </button>
+                className={`p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-400/10 transition-all ${currentConversationId === convo.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                title="Delete Chat"
+              >
+                <Trash2 size={14} className="flex-shrink-0" />
+              </button>
+            </div>
           ))}
         </div>
         <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
