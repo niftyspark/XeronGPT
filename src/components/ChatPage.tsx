@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from 'react';
-import { Send, Paperclip, Globe, Bot, User, FileText, Copy, Brush, Compass, Monitor, BookOpen, X, ChevronDown } from 'lucide-react';
+import { Send, Paperclip, Globe, Bot, User, FileText, Copy, Brush, Compass, Monitor, BookOpen, X, ChevronDown, Code } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AppMessage, Attachment, FOUR_EVERLAND_MODELS } from '../api';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatPageProps {
   messages: AppMessage[];
@@ -55,6 +56,7 @@ export default function ChatPage({
   textareaRef,
   messagesEndRef
 }: ChatPageProps) {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col h-full relative">
       {/* Clear Chat History Button */}
@@ -128,6 +130,29 @@ export default function ChatPage({
                                 h1: ({node, ...props}) => <h1 className="text-lime-400 uppercase font-bold" {...props} />,
                                 h2: ({node, ...props}) => <h2 className="text-lime-400 uppercase font-bold" {...props} />,
                                 h3: ({node, ...props}) => <h3 className="text-lime-400 uppercase font-bold" {...props} />,
+                                code({node, className, children, ...props}) {
+                                  const isInline = !className;
+                                  if (isInline) return <code className={className} {...props}>{children}</code>;
+                                  return (
+                                    <div className="my-4 p-3 bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center justify-between group transition-all hover:border-lime-400/30">
+                                      <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center text-lime-400 border border-white/5 shadow-inner">
+                                          <Code size={20} />
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-100">Generated Artifact</span>
+                                          <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Ready to build in IDE</span>
+                                        </div>
+                                      </div>
+                                      <button 
+                                        onClick={() => navigate('/build')}
+                                        className="px-4 py-2 bg-lime-400 text-black text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-105 active:scale-95"
+                                      >
+                                        Open IDE
+                                      </button>
+                                    </div>
+                                  );
+                                }
                               }}
                             >
                               {msg.content}

@@ -235,7 +235,43 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
                     {msg.role === 'user' ? 'User' : 'Architect'}
                   </div>
                   <div className={`px-4 py-3 rounded-2xl text-xs leading-relaxed max-w-[90%] ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-lime-400/5 border border-lime-400/10 text-zinc-300'}`}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({node, className, children, ...props}) {
+                          const isInline = !className;
+                          if (isInline) return <code className={className} {...props}>{children}</code>;
+                          // Extract filename if possible
+                          const codeStr = String(children);
+                          const fileNameMatch = codeStr.match(/\/\/\s*File:\s*(.*)/) || codeStr.match(/\/\*\s*File:\s*(.*)\s*\*\//);
+                          const fileName = fileNameMatch ? fileNameMatch[1].trim() : 'index.html';
+                          
+                          return (
+                            <div className="my-2 flex items-center gap-2 px-3 py-2 bg-zinc-900/80 border border-white/5 rounded-xl text-[10px] font-bold text-zinc-400 hover:text-lime-400 transition-colors cursor-pointer group">
+                              <Code size={14} className="text-lime-400 group-hover:scale-110 transition-transform" />
+                              <span className="truncate">{fileName}</span>
+                            </div>
+                          );
+                        }
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                    
+                    {msg.role === 'assistant' && msg.content.includes('```') && (
+                      <div className="mt-4 p-3 bg-zinc-900/50 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-lime-400/30 transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center text-[10px] font-black border border-white/5 text-lime-400 shadow-inner">
+                            V1
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-zinc-100">Version 1 - Build</div>
+                            <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Artifacts generated</div>
+                          </div>
+                        </div>
+                        <ChevronRight size={14} className="text-zinc-600 group-hover:text-lime-400 transition-colors" />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
