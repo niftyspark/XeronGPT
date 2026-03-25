@@ -7,7 +7,6 @@ import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, DbMessage } from './db';
 import Canvas from './components/Canvas';
-import { TaskScheduler } from './components/TaskScheduler';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -27,7 +26,6 @@ export default function App() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(true);
-  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -283,22 +281,12 @@ export default function App() {
             </div>
             New Chat
           </button>
-          <button 
-            onClick={() => setIsSchedulerOpen(true)}
-            className="flex items-center gap-2 w-full p-2.5 rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium group text-zinc-400"
-          >
-            <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center">
-              <Clock size={16} />
-            </div>
-            Task Schedule
-          </button>
         </div>
         
         <div className="flex-1"></div>
 
         {/* ... (rest of sidebar) */}
         
-        {isSchedulerOpen && <TaskScheduler onClose={() => setIsSchedulerOpen(false)} />}
 
         <div className="flex-1"></div>
 
