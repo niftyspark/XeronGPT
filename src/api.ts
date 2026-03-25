@@ -4,7 +4,14 @@ import { updateMemory } from './db';
 const API_KEY = import.meta.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
 const BASE_URL = 'https://ai.api.4everland.org/api/v1/chat/completions';
 
-export const DEFAULT_MODEL = 'anthropic/claude-opus-4.6';
+export const FOUR_EVERLAND_MODELS = [
+  'anthropic/claude-opus-4.6',
+  'anthropic/claude-sonnet-4.6',
+  'z-ai/glm-5-turbo',
+  'x-ai/grok-4.20-multi-agent-beta'
+];
+
+export const DEFAULT_MODEL = FOUR_EVERLAND_MODELS[0];
 
 export type { Attachment, AppMessage };
 
@@ -80,9 +87,10 @@ export async function handleFileUpload(file: File): Promise<{ type: 'image' | 't
   });
 }
 
-async function* processOpenAIStream(apiMessages: any[], tools?: any[], signal?: AbortSignal, userId?: string): AsyncGenerator<string, void, unknown> {
+async function* processOpenAIStream(apiMessages: any[], options: { model?: string, tools?: any[], signal?: AbortSignal, userId?: string }): AsyncGenerator<string, void, unknown> {
+  const { model = DEFAULT_MODEL, tools, signal, userId } = options;
   const body: any = {
-    model: DEFAULT_MODEL,
+    model,
     messages: apiMessages,
     stream: true
   };
@@ -208,12 +216,12 @@ async function* processOpenAIStream(apiMessages: any[], tools?: any[], signal?: 
       }
     }
 
-    yield* processOpenAIStream(apiMessages, tools, signal, userId);
+    yield* processOpenAIStream(apiMessages, { model, tools, signal, userId });
   }
 }
 
-export async function* streamChat(messages: AppMessage[], options: { webSearch?: boolean, liveBrowser?: boolean, userId?: string, currentMemory?: string } = {}, signal?: AbortSignal) {
-  const { webSearch, liveBrowser, userId, currentMemory } = options;
+export async function* streamChat(messages: AppMessage[], options: { model?: string, webSearch?: boolean, liveBrowser?: boolean, userId?: string, currentMemory?: string } = {}, signal?: AbortSignal) {
+  const { model, webSearch, liveBrowser, userId, currentMemory } = options;
   
   const apiMessages = messages.map(m => {
     if (m.attachments && m.attachments.length > 0) {
@@ -307,5 +315,5 @@ export async function* streamChat(messages: AppMessage[], options: { webSearch?:
     });
   }
 
-  yield* processOpenAIStream(apiMessages, tools.length > 0 ? tools : undefined, signal, userId);
+  yield* processOpenAIStream(apiMessages, { model, tools: tools.length > 0 ? tools : undefined, signal, userId });
 }
