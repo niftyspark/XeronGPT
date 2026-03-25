@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Code, Globe, Play, Save, ChevronLeft, ChevronRight, Maximize2, Minimize2, Copy, Check, Loader2, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Code, Globe, Play, Save, ChevronLeft, ChevronRight, Maximize2, Minimize2, Copy, Check, Loader2, Bot, User, Sparkles, Trash2, Plus, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { streamChat, AppMessage, FOUR_EVERLAND_MODELS, DEFAULT_MODEL } from '../api';
@@ -14,10 +14,28 @@ interface BuildPageProps {
 }
 
 export default function BuildPage({ user, onBack, currentMemory }: BuildPageProps) {
+  const DEFAULT_CODE = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: #39ff14; }
+    .container { border: 1px solid #39ff14; padding: 40px; border-radius: 20px; box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); text-align: center; }
+    h1 { margin: 0; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 4px; }
+    p { color: #888; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>System Ready</h1>
+    <p>AI Coding Assistant Initialized</p>
+  </div>
+</body>
+</html>`;
+
   const [messages, setMessages] = useState<AppMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [code, setCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: #39ff14; }\n    .container { border: 1px solid #39ff14; padding: 40px; border-radius: 20px; box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); text-align: center; }\n    h1 { margin: 0; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 4px; }\n    p { color: #888; margin-top: 10px; }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>System Ready</h1>\n    <p>AI Coding Assistant Initialized</p>\n  </div>\n</body>\n</html>');
+  const [code, setCode] = useState(DEFAULT_CODE);
   const [isLoaded, setIsLoaded] = useState(false);
   const [viewMode, setViewMode] = useState<'preview'>('preview');
   const [activeTab, setActiveTab] = useState<'chat' | 'files'>('chat');
@@ -60,6 +78,187 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
     }
   }, [user, messages, code, isLoaded]);
 
+  const handleClearChat = () => {
+    setMessages([]);
+  };
+
+  const handleNewProject = () => {
+    setMessages([]);
+    setCode(DEFAULT_CODE);
+    if (user) {
+      updateCanvasState(user.uid, [], DEFAULT_CODE);
+    }
+  };
+
+  const getPreviewContent = (rawCode: string) => {
+    // Check if it's a React component (contains JSX or imports React)
+    const isReact = rawCode.includes('import React') || rawCode.includes('export default function') || rawCode.includes('<App') || rawCode.includes('useState');
+    
+    if (isReact) {
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          <script type="importmap">
+            {
+              "imports": {
+                "react": "https://esm.sh/react@18.2.0",
+                "react-dom": "https://esm.sh/react-dom@18.2.0",
+                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+                "lucide-react": "https://esm.sh/lucide-react@0.344.0",
+                "framer-motion": "https://esm.sh/framer-motion@11.0.8",
+                "recharts": "https://esm.sh/recharts@2.12.2",
+                "clsx": "https://esm.sh/clsx@2.1.0",
+                "tailwind-merge": "https://esm.sh/tailwind-merge@2.2.1"
+              }
+            }
+          </script>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script>
+            tailwind.config = {
+              darkMode: 'class',
+              theme: {
+                extend: {
+                  colors: {
+                    border: "hsl(var(--border))",
+                    input: "hsl(var(--input))",
+                    ring: "hsl(var(--ring))",
+                    background: "hsl(var(--background))",
+                    foreground: "hsl(var(--foreground))",
+                    primary: {
+                      DEFAULT: "hsl(var(--primary))",
+                      foreground: "hsl(var(--primary-foreground))",
+                    },
+                    secondary: {
+                      DEFAULT: "hsl(var(--secondary))",
+                      foreground: "hsl(var(--secondary-foreground))",
+                    },
+                    destructive: {
+                      DEFAULT: "hsl(var(--destructive))",
+                      foreground: "hsl(var(--destructive-foreground))",
+                    },
+                    muted: {
+                      DEFAULT: "hsl(var(--muted))",
+                      foreground: "hsl(var(--muted-foreground))",
+                    },
+                    accent: {
+                      DEFAULT: "hsl(var(--accent))",
+                      foreground: "hsl(var(--accent-foreground))",
+                    },
+                    popover: {
+                      DEFAULT: "hsl(var(--popover))",
+                      foreground: "hsl(var(--popover-foreground))",
+                    },
+                    card: {
+                      DEFAULT: "hsl(var(--card))",
+                      foreground: "hsl(var(--card-foreground))",
+                    },
+                  },
+                },
+              },
+            }
+          </script>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+            
+            :root {
+              --background: 0 0% 100%;
+              --foreground: 240 10% 3.9%;
+              --card: 0 0% 100%;
+              --card-foreground: 240 10% 3.9%;
+              --popover: 0 0% 100%;
+              --popover-foreground: 240 10% 3.9%;
+              --primary: 240 5.9% 10%;
+              --primary-foreground: 0 0% 98%;
+              --secondary: 240 4.8% 95.9%;
+              --secondary-foreground: 240 5.9% 10%;
+              --muted: 240 4.8% 95.9%;
+              --muted-foreground: 240 3.8% 46.1%;
+              --accent: 240 4.8% 95.9%;
+              --accent-foreground: 240 5.9% 10%;
+              --destructive: 0 84.2% 60.2%;
+              --destructive-foreground: 0 0% 98%;
+              --border: 240 5.9% 90%;
+              --input: 240 5.9% 90%;
+              --ring: 240 5.9% 10%;
+              --radius: 0.5rem;
+            }
+
+            .dark {
+              --background: 240 10% 3.9%;
+              --foreground: 0 0% 98%;
+              --card: 240 10% 3.9%;
+              --card-foreground: 0 0% 98%;
+              --popover: 240 10% 3.9%;
+              --popover-foreground: 0 0% 98%;
+              --primary: 0 0% 98%;
+              --primary-foreground: 240 5.9% 10%;
+              --secondary: 240 3.7% 15.9%;
+              --secondary-foreground: 0 0% 98%;
+              --muted: 240 3.7% 15.9%;
+              --muted-foreground: 240 5% 64.9%;
+              --accent: 240 3.7% 15.9%;
+              --accent-foreground: 0 0% 98%;
+              --destructive: 0 62.8% 30.6%;
+              --destructive-foreground: 0 0% 98%;
+              --border: 240 3.7% 15.9%;
+              --input: 240 3.7% 15.9%;
+              --ring: 240 4.9% 83.9%;
+            }
+
+            * { font-family: 'Inter', sans-serif; }
+            body { margin: 0; padding: 0; min-height: 100vh; background-color: hsl(var(--background)); color: hsl(var(--foreground)); }
+          </style>
+        </head>
+        <body class="dark">
+          <div id="root"></div>
+          <script type="text/babel" data-type="module">
+            import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+            import { createRoot } from 'react-dom/client';
+            import * as Lucide from 'lucide-react';
+            
+            const cn = (...args) => args.filter(Boolean).join(' ');
+
+            // Strip standard imports to avoid conflicts with importmap
+            const processedCode = ${JSON.stringify(rawCode.replace(/import.*from.*;/g, ''))};
+
+            try {
+              const script = document.createElement('script');
+              script.type = 'text/babel';
+              script.setAttribute('data-type', 'module');
+              script.textContent = \`
+                import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+                import { createRoot } from 'react-dom/client';
+                import * as Lucide from 'lucide-react';
+                
+                \${processedCode}
+
+                const root = createRoot(document.getElementById('root'));
+                const MainComponent = typeof App !== 'undefined' ? App : null;
+                
+                if (MainComponent) {
+                  root.render(<MainComponent />);
+                } else {
+                  root.render(<div className="p-8 text-red-500 font-mono">No App component found. Please define an 'App' component.</div>);
+                }
+              \`;
+              document.body.appendChild(script);
+            } catch (err) {
+              console.error(err);
+              document.getElementById('root').innerHTML = '<div class="p-8 text-red-500 font-mono">' + err.message + '</div>';
+            }
+          </script>
+        </body>
+        </html>
+      `;
+    }
+    
+    return rawCode;
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -96,8 +295,7 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
         ));
 
         // Extract code if present
-        const codeMatch = fullContent.match(/```html\n([\s\S]*?)\n```/) || 
-                         fullContent.match(/```xml\n([\s\S]*?)\n```/) ||
+        const codeMatch = fullContent.match(/```(?:html|xml|jsx|tsx|javascript|typescript|js|ts|react)?\n([\s\S]*?)\n```/) || 
                          fullContent.match(/```[\s\S]*?\n([\s\S]*?)\n```/);
         if (codeMatch && codeMatch[1]) {
           setCode(codeMatch[1]);
@@ -176,6 +374,14 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
         </div>
 
         <div className="flex items-center gap-2">
+          <button 
+            onClick={handleNewProject}
+            className="px-3 py-1.5 bg-zinc-900 border border-white/5 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-lime-400 transition-all flex items-center gap-2"
+            title="New Project"
+          >
+            <Plus size={14} />
+            NEW PROJECT
+          </button>
           <button className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-bold border border-white/5 transition-all flex items-center gap-2">
             <Save size={14} />
             Deploy
@@ -188,14 +394,23 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
         <div className="w-[350px] border-r border-white/5 flex flex-col bg-black/20">
           <div className="p-4 border-b border-white/5 flex items-center justify-between">
             <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">AI Architect</h2>
-            <div className="flex gap-1">
-              <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-              <div className="w-2 h-2 rounded-full bg-lime-400/40" />
-              <div className="w-2 h-2 rounded-full bg-lime-400/20" />
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleClearChat}
+                className="p-1.5 hover:bg-white/5 rounded-md text-zinc-500 hover:text-red-400 transition-colors"
+                title="Clear Chat"
+              >
+                <Trash2 size={14} />
+              </button>
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-lime-400/40" />
+                <div className="w-2 h-2 rounded-full bg-lime-400/20" />
+              </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center opacity-30 px-6">
                 <Bot size={40} className="mb-4 text-lime-400" />
@@ -303,10 +518,10 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
             </div>
             <iframe 
               ref={iframeRef}
-              srcDoc={code}
+              srcDoc={getPreviewContent(code)}
               title="Preview"
               className="flex-1 w-full border-none bg-white"
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-modals allow-forms allow-popups allow-same-origin"
             />
           </div>
         </div>
