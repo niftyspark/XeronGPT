@@ -1,12 +1,7 @@
 const API_KEY = import.meta.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
 const BASE_URL = 'https://ai.api.4everland.org/api/v1/chat/completions';
 
-export const MODELS = [
-  { id: 'anthropic/claude-opus-4.6', name: 'Claude Opus 4.6' },
-  { id: 'anthropic/claude-sonnet-4.6', name: 'Claude Sonnet 4.6' },
-  { id: 'z-ai/glm-5-turbo', name: 'GLM 5 Turbo' },
-  { id: 'x-ai/grok-4.20-multi-agent-beta', name: 'Grok 4.20 Beta' }
-];
+export const DEFAULT_MODEL = 'anthropic/claude-opus-4.6';
 
 export type Attachment = {
   id: string;
@@ -95,9 +90,9 @@ export async function handleFileUpload(file: File): Promise<{ type: 'image' | 't
   });
 }
 
-async function* processOpenAIStream(apiMessages: any[], model: string, tools?: any[], signal?: AbortSignal): AsyncGenerator<string, void, unknown> {
+async function* processOpenAIStream(apiMessages: any[], tools?: any[], signal?: AbortSignal): AsyncGenerator<string, void, unknown> {
   const body: any = {
-    model,
+    model: DEFAULT_MODEL,
     messages: apiMessages,
     stream: true
   };
@@ -205,11 +200,11 @@ async function* processOpenAIStream(apiMessages: any[], model: string, tools?: a
       }
     }
 
-    yield* processOpenAIStream(apiMessages, model, tools, signal);
+    yield* processOpenAIStream(apiMessages, tools, signal);
   }
 }
 
-export async function* streamChat(messages: AppMessage[], model: string, webSearch: boolean, liveBrowser: boolean = false, signal?: AbortSignal) {
+export async function* streamChat(messages: AppMessage[], webSearch: boolean, liveBrowser: boolean = false, signal?: AbortSignal) {
   const apiMessages = messages.map(m => {
     if (m.attachments && m.attachments.length > 0) {
       const contentParts: any[] = [];
@@ -273,5 +268,5 @@ export async function* streamChat(messages: AppMessage[], model: string, webSear
     ];
   }
 
-  yield* processOpenAIStream(apiMessages, model, tools, signal);
+  yield* processOpenAIStream(apiMessages, tools, signal);
 }

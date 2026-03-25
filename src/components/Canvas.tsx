@@ -2,19 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Code, Eye, X, Loader2, Bot, User, ChevronLeft, ChevronRight, Play, Copy, Check, Download, Monitor, Terminal, Sparkles, Square } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { streamChat, MODELS, AppMessage } from '../api';
+import { streamChat, AppMessage } from '../api';
 
 interface CanvasProps {
   onClose: () => void;
   user: any;
-  initialModel: string;
 }
 
-export default function Canvas({ onClose, user, initialModel }: CanvasProps) {
+export default function Canvas({ onClose, user }: CanvasProps) {
   const [messages, setMessages] = useState<AppMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [model, setModel] = useState(initialModel);
   const [code, setCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #111; color: #39ff14; }\n    h1 { border: 2px solid #39ff14; padding: 20px; }\n    /* Hide scrollbars */\n    ::-webkit-scrollbar { display: none !important; }\n    * { scrollbar-width: none !important; -ms-overflow-style: none !important; }\n  </style>\n</head>\n<body>\n  <h1>Ready to build?</h1>\n</body>\n</html>');
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -59,7 +57,7 @@ export default function Canvas({ onClose, user, initialModel }: CanvasProps) {
         content: `You are a web developer assistant. When asked to create or modify a website, provide the full HTML/CSS/JS code within a single markdown code block. Ensure the code is self-contained and ready to run in an iframe. Use a futuristic, cyber-industrial theme if not specified otherwise. Keep your explanations brief.`
       };
 
-      const stream = streamChat([systemMsg, ...messages, newUserMsg], model, false, false, abortControllerRef.current.signal);
+      const stream = streamChat([systemMsg, ...messages, newUserMsg], false, false, abortControllerRef.current.signal);
       let fullContent = '';
       
       for await (const chunk of stream) {

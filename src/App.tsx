@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush, Monitor, Clock, BookOpen, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { streamChat, MODELS, AppMessage, handleFileUpload, Attachment } from './api';
+import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment } from './api';
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, DbMessage } from './db';
@@ -20,7 +20,6 @@ export default function App() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const [model, setModel] = useState(MODELS[0].id);
   const [webSearch, setWebSearch] = useState(false);
   const [liveBrowser, setLiveBrowser] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -161,7 +160,7 @@ export default function App() {
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', isStreaming: true }]);
 
     try {
-      const stream = streamChat([...messages, newUserMsg], model, webSearch, liveBrowser, abortControllerRef.current.signal);
+      const stream = streamChat([...messages, newUserMsg], webSearch, liveBrowser, abortControllerRef.current.signal);
       let fullContent = '';
       for await (const chunk of stream) {
         fullContent += chunk;
@@ -355,20 +354,6 @@ export default function App() {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 -ml-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-lime-400 transition-colors">
               <Menu size={20} />
             </button>
-            
-            {/* Model Selector */}
-            <div className="relative group">
-              <select 
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="appearance-none bg-transparent hover:bg-zinc-800 rounded-lg py-1.5 pl-3 pr-8 text-lg font-semibold cursor-pointer focus:outline-none transition-colors text-zinc-200"
-              >
-                {MODELS.map(m => (
-                  <option key={m.id} value={m.id} className="bg-zinc-800 text-sm">{m.name}</option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400" />
-            </div>
           </div>
 
           {/* Clear Chat History Button */}
@@ -397,11 +382,11 @@ export default function App() {
               </div>
             ) : (
               messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-zinc-700' : 'bg-emerald-600'}`}>
                     {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
-                  <div className={`flex flex-col gap-2 max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex flex-col gap-2 flex-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     {/* Attachments */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-1">
@@ -422,9 +407,9 @@ export default function App() {
                     
                     {/* Message Content */}
                     {msg.content && (
-                      <div className={`px-5 py-3.5 rounded-3xl ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
+                      <div className={`px-5 py-3.5 rounded-3xl max-w-3xl ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
                         {msg.role === 'user' ? (
-                          <div className="whitespace-pre-wrap">{msg.content}</div>
+                          <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                         ) : (
                           <div className="relative group">
                             <button
@@ -434,7 +419,7 @@ export default function App() {
                             >
                               <Copy size={16} />
                             </button>
-                            <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-loose prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl">
+                            <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-[2.2] prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
@@ -587,7 +572,6 @@ export default function App() {
         <Canvas 
           onClose={() => setIsCanvasOpen(false)} 
           user={user} 
-          initialModel={model} 
         />
       )}
     </div>
