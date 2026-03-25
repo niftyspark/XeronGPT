@@ -21,6 +21,84 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  app.post("/api/generate-image", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      const response = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inputs: prompt }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HuggingFace API Error: ${response.status} - ${errorText}`);
+      }
+
+      const imageBuffer = await response.arrayBuffer();
+      const base64Image = Buffer.from(imageBuffer).toString('base64');
+      
+      res.json({ image: `data:image/jpeg;base64,${base64Image}` });
+    } catch (error: any) {
+      console.error('Image Generation Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Proxy for 4EVERLAND Chat API
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { model, messages, temperature } = req.body;
+      const apiKey = process.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
+
+      const response = await fetch('https://ai.api.4everland.org/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: temperature || 0.7,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+
+      // Set headers for streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        res.write(chunk);
+      }
+      res.end();
+    } catch (error: any) {
+      console.error('Chat Proxy Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/browse", async (req, res) => {
     try {
       const { url } = req.body;

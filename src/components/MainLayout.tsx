@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { MessageSquare, Plus, Calendar, Code, ChevronDown, Search, Trash2, LogOut, Menu, User } from 'lucide-react';
+import { MessageSquare, Plus, Calendar, Code, ChevronDown, Search, Trash2, LogOut, Menu, User, BrainCircuit } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { Conversation } from '../db';
 
@@ -15,6 +15,8 @@ interface MainLayoutProps {
   handleLogout: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  autoLearnEnabled?: boolean;
+  setAutoLearnEnabled?: (enabled: boolean) => void;
 }
 
 export default function MainLayout({
@@ -27,7 +29,9 @@ export default function MainLayout({
   handleDeleteConversation,
   handleLogout,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  autoLearnEnabled = false,
+  setAutoLearnEnabled
 }: MainLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -142,6 +146,26 @@ export default function MainLayout({
             </div>
           )}
         </div>
+
+        {setAutoLearnEnabled && (
+          <div className="p-3 border-t border-zinc-800">
+            <button
+              onClick={() => setAutoLearnEnabled(!autoLearnEnabled)}
+              className={`flex items-center justify-between w-full p-2.5 rounded-lg transition-colors text-sm font-medium group ${autoLearnEnabled ? 'bg-lime-400/10 text-lime-400' : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'}`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${autoLearnEnabled ? 'bg-lime-400/20 text-lime-400' : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-400'}`}>
+                  <BrainCircuit size={16} className={autoLearnEnabled ? 'animate-pulse' : ''} />
+                </div>
+                Auto-Learning
+              </div>
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${autoLearnEnabled ? 'bg-lime-400' : 'bg-zinc-700'}`}>
+                <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${autoLearnEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+              </div>
+            </button>
+          </div>
+        )}
+
         <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
             <img src={user.photoURL || ''} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full bg-zinc-800" />

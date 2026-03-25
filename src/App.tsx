@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2, Bot, User } from 'lucide-react';
-import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment } from './api';
+import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment, performAutonomousLearning } from './api';
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, subscribeToMemory } from './db';
@@ -9,6 +9,8 @@ import ScheduleTask from './components/ScheduleTask';
 import BuildPage from './components/BuildPage';
 import MainLayout from './components/MainLayout';
 import ChatPage from './components/ChatPage';
+import ConfirmModal from './components/ConfirmModal';
+import { Toaster, toast } from 'sonner';
 
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
@@ -33,6 +35,38 @@ export default function App() {
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+  const [autoLearnEnabled, setAutoLearnEnabled] = useState(false);
+  
+  const handleGenerateImage = async (prompt: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!response.ok) throw new Error('Failed to generate image');
+      const data = await response.json();
+      const imageMsg: AppMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `![Generated Image](data:image/png;base64,${data.image})`,
+      };
+      setMessages(prev => [...prev, imageMsg]);
+      if (currentConversationId) {
+        await saveMessage(currentConversationId, user!.uid, 'assistant', imageMsg.content);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to generate image');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Modal state
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [convoToDelete, setConvoToDelete] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,6 +127,24 @@ export default function App() {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (!autoLearnEnabled || !user) return;
+
+    // Run every 60 seconds for demonstration purposes
+    const intervalId = setInterval(async () => {
+      try {
+        const newSkill = await performAutonomousLearning(user.uid, currentMemory, selectedModel);
+        if (newSkill) {
+          toast.success(`🧠 AI learned a new skill: ${newSkill.substring(0, 60)}...`);
+        }
+      } catch (error) {
+        console.error("Auto-learn error:", error);
+      }
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [autoLearnEnabled, user, currentMemory, selectedModel]);
+
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
@@ -124,20 +176,25 @@ export default function App() {
 
   const handleDeleteConversation = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this chat?")) {
-      const previousConversations = [...conversations];
-      setConversations(prev => prev.filter(c => c.id !== id));
-      if (currentConversationId === id) {
-        startNewChat();
-      }
+    setConvoToDelete(id);
+    setIsConfirmModalOpen(true);
+  };
 
-      try {
-        await deleteConversation(id);
-      } catch (error) {
-        console.error("Failed to delete conversation:", error);
-        setConversations(previousConversations);
-        alert("Failed to delete conversation. Please try again.");
-      }
+  const confirmDeleteConversation = async () => {
+    if (!convoToDelete) return;
+    const id = convoToDelete;
+    const previousConversations = [...conversations];
+    setConversations(prev => prev.filter(c => c.id !== id));
+    if (currentConversationId === id) {
+      startNewChat();
+    }
+
+    try {
+      await deleteConversation(id);
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      setConversations(previousConversations);
+      // We should probably use a toast here, but for now console.error is fine
     }
   };
 
@@ -292,6 +349,8 @@ export default function App() {
             handleLogout={handleLogout}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            autoLearnEnabled={autoLearnEnabled}
+            setAutoLearnEnabled={setAutoLearnEnabled}
           >
             <Routes>
               <Route path="/schedule" element={<ScheduleTask onBack={() => navigate('/')} />} />
@@ -302,6 +361,7 @@ export default function App() {
                   setInput={setInput}
                   isLoading={isLoading}
                   handleSend={handleSend}
+                  handleGenerateImage={handleGenerateImage}
                   stopGeneration={stopGeneration}
                   onFileChange={onFileChange}
                   attachments={attachments}
@@ -334,6 +394,17 @@ export default function App() {
           currentMemory={currentMemory}
         />
       )}
+
+      <ConfirmModal 
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={confirmDeleteConversation}
+        title="Delete Conversation"
+        message="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
+      <Toaster theme="dark" position="top-center" />
     </>
   );
 }

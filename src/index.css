@@ -4,6 +4,7 @@
 @layer base {
   body {
     font-family: 'Roboto Condensed', sans-serif;
+    overflow: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Roboto Condensed', sans-serif;
