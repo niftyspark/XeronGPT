@@ -52,6 +52,51 @@
         }
       },
       "required": ["conversationId", "role", "content", "createdAt", "userId"]
+    },
+    "Memory": {
+      "title": "Memory",
+      "description": "Long-term memory for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user."
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the memory."
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "description": "When the memory was last updated."
+        }
+      },
+      "required": ["userId", "content", "updatedAt"]
+    },
+    "CanvasState": {
+      "title": "CanvasState",
+      "description": "The state of the live canvas for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user."
+        },
+        "messages": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "The chat messages in the canvas."
+        },
+        "code": {
+          "type": "string",
+          "description": "The current code in the canvas."
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "description": "When the canvas state was last updated."
+        }
+      },
+      "required": ["userId", "messages", "code", "updatedAt"]
     }
   },
   "firestore": {
@@ -62,6 +107,14 @@
     "/messages/{messageId}": {
       "schema": { "$ref": "#/entities/Message" },
       "description": "Stores messages for all conversations."
+    },
+    "/memories/{userId}": {
+      "schema": { "$ref": "#/entities/Memory" },
+      "description": "Stores long-term memory for each user."
+    },
+    "/canvas_states/{userId}": {
+      "schema": { "$ref": "#/entities/CanvasState" },
+      "description": "Stores the current canvas state for each user."
     }
   }
 }

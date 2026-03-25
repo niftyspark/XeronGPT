@@ -3,17 +3,20 @@ import { Send, Code, Eye, X, Loader2, Bot, User, ChevronLeft, ChevronRight, Play
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { streamChat, AppMessage } from '../api';
+import { subscribeToCanvasState, updateCanvasState } from '../db';
 
 interface CanvasProps {
   onClose: () => void;
   user: any;
+  currentMemory?: string;
 }
 
-export default function Canvas({ onClose, user }: CanvasProps) {
+export default function Canvas({ onClose, user, currentMemory }: CanvasProps) {
   const [messages, setMessages] = useState<AppMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [code, setCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #111; color: #39ff14; }\n    h1 { border: 2px solid #39ff14; padding: 20px; }\n    /* Hide scrollbars */\n    ::-webkit-scrollbar { display: none !important; }\n    * { scrollbar-width: none !important; -ms-overflow-style: none !important; }\n  </style>\n</head>\n<body>\n  <h1>Ready to build?</h1>\n</body>\n</html>');
+  const [isLoaded, setIsLoaded] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -29,6 +32,30 @@ export default function Canvas({ onClose, user }: CanvasProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToCanvasState(user.uid, (state) => {
+        if (!isLoaded) {
+          if (state) {
+            setMessages(state.messages);
+            setCode(state.code);
+          }
+          setIsLoaded(true);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user, isLoaded]);
+
+  useEffect(() => {
+    if (user && isLoaded) {
+      const timer = setTimeout(() => {
+        updateCanvasState(user.uid, messages, code);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, messages, code, isLoaded]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -57,7 +84,10 @@ export default function Canvas({ onClose, user }: CanvasProps) {
         content: `You are a web developer assistant. When asked to create or modify a website, provide the full HTML/CSS/JS code within a single markdown code block. Ensure the code is self-contained and ready to run in an iframe. Use a futuristic, cyber-industrial theme if not specified otherwise. Keep your explanations brief.`
       };
 
-      const stream = streamChat([systemMsg, ...messages, newUserMsg], false, false, abortControllerRef.current.signal);
+      const stream = streamChat([systemMsg, ...messages, newUserMsg], {
+        userId: user.uid,
+        currentMemory
+      }, abortControllerRef.current.signal);
       let fullContent = '';
       
       for await (const chunk of stream) {
@@ -197,12 +227,12 @@ export default function Canvas({ onClose, user }: CanvasProps) {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-zinc-800 border border-white/10' : 'bg-lime-400 text-black shadow-[0_0_10px_rgba(163,230,53,0.2)]'}`}>
                     {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                   </div>
-                  <div className={`flex flex-col gap-2 max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className={`px-4 py-2.5 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100 border border-white/5' : 'bg-transparent text-zinc-300'}`}>
+                  <div className={`flex flex-col gap-2 max-w-[85%] min-w-0 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`px-4 py-2.5 rounded-2xl text-sm break-words overflow-hidden ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100 border border-white/5' : 'bg-transparent text-zinc-300'}`}>
                       {msg.role === 'user' ? (
                         <div className="whitespace-pre-wrap">{msg.content}</div>
                       ) : (
-                        <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-sm">
+                        <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-sm prose-pre:overflow-x-auto prose-pre:max-w-full">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {msg.content.replace(/```[\s\S]*?(?:```|$)/gi, '*[Code generated and applied to canvas]*')}
                           </ReactMarkdown>

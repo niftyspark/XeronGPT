@@ -25,6 +25,11 @@
     -ms-overflow-style: none !important;  /* IE and Edge */
     scrollbar-width: none !important;  /* Firefox */
   }
+
+  pre {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar {

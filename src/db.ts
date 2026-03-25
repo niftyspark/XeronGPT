@@ -1,6 +1,6 @@
-import { collection, doc, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, getDocs, serverTimestamp, Timestamp, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import { AppMessage } from './api';
+import { AppMessage } from './types';
 
 enum OperationType {
   CREATE = 'create',
@@ -68,6 +68,19 @@ export type DbMessage = {
   content: string;
   createdAt: Timestamp;
   userId: string;
+};
+
+export type Memory = {
+  userId: string;
+  content: string;
+  updatedAt: Timestamp;
+};
+
+export type CanvasState = {
+  userId: string;
+  messages: AppMessage[];
+  code: string;
+  updatedAt: Timestamp;
 };
 
 export function subscribeToConversations(userId: string, callback: (conversations: Conversation[]) => void) {
@@ -167,5 +180,54 @@ export async function deleteConversation(conversationId: string) {
     await deleteDoc(doc(db, 'conversations', conversationId));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `conversations/${conversationId}`);
+  }
+}
+
+export function subscribeToMemory(userId: string, callback: (memory: Memory | null) => void) {
+  return onSnapshot(doc(db, 'memories', userId), (doc) => {
+    if (doc.exists()) {
+      callback(doc.data() as Memory);
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    handleFirestoreError(error, OperationType.GET, `memories/${userId}`);
+  });
+}
+
+export async function updateMemory(userId: string, content: string) {
+  try {
+    await setDoc(doc(db, 'memories', userId), {
+      userId,
+      content,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `memories/${userId}`);
+  }
+}
+
+export function subscribeToCanvasState(userId: string, callback: (state: CanvasState | null) => void) {
+  return onSnapshot(doc(db, 'canvas_states', userId), (doc) => {
+    if (doc.exists()) {
+      callback(doc.data() as CanvasState);
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    handleFirestoreError(error, OperationType.GET, `canvas_states/${userId}`);
+  });
+}
+
+export async function updateCanvasState(userId: string, messages: AppMessage[], code: string) {
+  try {
+    await setDoc(doc(db, 'canvas_states', userId), {
+      userId,
+      messages,
+      code,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `canvas_states/${userId}`);
   }
 }

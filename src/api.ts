@@ -1,22 +1,12 @@
+import { Attachment, AppMessage } from './types';
+import { updateMemory } from './db';
+
 const API_KEY = import.meta.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
 const BASE_URL = 'https://ai.api.4everland.org/api/v1/chat/completions';
 
 export const DEFAULT_MODEL = 'anthropic/claude-opus-4.6';
 
-export type Attachment = {
-  id: string;
-  type: 'image' | 'text';
-  data: string;
-  name: string;
-};
-
-export type AppMessage = {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  attachments?: Attachment[];
-  isStreaming?: boolean;
-};
+export type { Attachment, AppMessage };
 
 export async function browseUrl(url: string): Promise<string> {
   try {
@@ -90,7 +80,7 @@ export async function handleFileUpload(file: File): Promise<{ type: 'image' | 't
   });
 }
 
-async function* processOpenAIStream(apiMessages: any[], tools?: any[], signal?: AbortSignal): AsyncGenerator<string, void, unknown> {
+async function* processOpenAIStream(apiMessages: any[], tools?: any[], signal?: AbortSignal, userId?: string): AsyncGenerator<string, void, unknown> {
   const body: any = {
     model: DEFAULT_MODEL,
     messages: apiMessages,
@@ -197,14 +187,34 @@ async function* processOpenAIStream(apiMessages: any[], tools?: any[], signal?: 
             content: `Error executing tool: ${e instanceof Error ? e.message : String(e)}`
           });
         }
+      } else if (tc.function.name === 'updateMemory' && userId) {
+        try {
+          const args = JSON.parse(tc.function.arguments);
+          await updateMemory(userId, args.content);
+          apiMessages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            name: tc.function.name,
+            content: "Memory updated successfully."
+          });
+        } catch (e) {
+          apiMessages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            name: tc.function.name,
+            content: `Error updating memory: ${e instanceof Error ? e.message : String(e)}`
+          });
+        }
       }
     }
 
-    yield* processOpenAIStream(apiMessages, tools, signal);
+    yield* processOpenAIStream(apiMessages, tools, signal, userId);
   }
 }
 
-export async function* streamChat(messages: AppMessage[], webSearch: boolean, liveBrowser: boolean = false, signal?: AbortSignal) {
+export async function* streamChat(messages: AppMessage[], options: { webSearch?: boolean, liveBrowser?: boolean, userId?: string, currentMemory?: string } = {}, signal?: AbortSignal) {
+  const { webSearch, liveBrowser, userId, currentMemory } = options;
+  
   const apiMessages = messages.map(m => {
     if (m.attachments && m.attachments.length > 0) {
       const contentParts: any[] = [];
@@ -223,6 +233,17 @@ export async function* streamChat(messages: AppMessage[], webSearch: boolean, li
     return { role: m.role, content: m.content };
   });
 
+  if (userId) {
+    const memoryPrompt = currentMemory 
+      ? `Your persistent memory of this user: ${currentMemory}\n\nUse this memory to provide personalized responses. If you learn something new and important about the user, use the updateMemory tool to save it.`
+      : `You have a persistent memory of this user. Currently, it's empty. As you learn important facts, preferences, or context about the user, use the updateMemory tool to save it so you can remember it in future conversations.`;
+
+    apiMessages.unshift({
+      role: 'system',
+      content: memoryPrompt
+    });
+  }
+
   if (webSearch) {
     const lastUserMessage = messages.slice().reverse().find(m => m.role === 'user');
     if (lastUserMessage && lastUserMessage.content) {
@@ -239,7 +260,7 @@ export async function* streamChat(messages: AppMessage[], webSearch: boolean, li
     }
   }
 
-  let tools: any[] | undefined = undefined;
+  let tools: any[] = [];
   
   if (liveBrowser) {
     apiMessages.unshift({
@@ -247,26 +268,44 @@ export async function* streamChat(messages: AppMessage[], webSearch: boolean, li
       content: 'You are an AI assistant with access to a live web browser. You can read specific URLs to gather information. Always provide accurate, up-to-date information by browsing the web when necessary. If a user asks you to read a specific URL, use the browseUrl tool.'
     });
     
-    tools = [
-      {
-        type: "function",
-        function: {
-          name: "browseUrl",
-          description: "Fetches and reads the text content of a specific URL.",
-          parameters: {
-            type: "object",
-            properties: {
-              url: {
-                type: "string",
-                description: "The full URL to browse (e.g., https://example.com)"
-              }
-            },
-            required: ["url"]
-          }
+    tools.push({
+      type: "function",
+      function: {
+        name: "browseUrl",
+        description: "Fetches and reads the text content of a specific URL.",
+        parameters: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description: "The full URL to browse (e.g., https://example.com)"
+            }
+          },
+          required: ["url"]
         }
       }
-    ];
+    });
   }
 
-  yield* processOpenAIStream(apiMessages, tools, signal);
+  if (userId) {
+    tools.push({
+      type: "function",
+      function: {
+        name: "updateMemory",
+        description: "Updates your persistent memory of the user. Use this to save important facts, preferences, or context that should be remembered across conversations.",
+        parameters: {
+          type: "object",
+          properties: {
+            content: {
+              type: "string",
+              description: "The new memory content. This should be a concise summary of what you've learned about the user."
+            }
+          },
+          required: ["content"]
+        }
+      }
+    });
+  }
+
+  yield* processOpenAIStream(apiMessages, tools.length > 0 ? tools : undefined, signal, userId);
 }

@@ -87,6 +87,23 @@ service cloud.firestore {
              validStringLength('userId', 1, 128);
     }
 
+    function isValidMemory() {
+      return hasOnlyAllowedFields(['userId', 'content', 'updatedAt']) &&
+             hasRequiredFields(['userId', 'content', 'updatedAt']) &&
+             validStringLength('userId', 1, 128) &&
+             validStringLength('content', 0, 10000) &&
+             request.resource.data.updatedAt is timestamp;
+    }
+
+    function isValidCanvasState() {
+      return hasOnlyAllowedFields(['userId', 'messages', 'code', 'updatedAt']) &&
+             hasRequiredFields(['userId', 'messages', 'code', 'updatedAt']) &&
+             validStringLength('userId', 1, 128) &&
+             request.resource.data.messages is list &&
+             validStringLength('code', 0, 1000000) &&
+             request.resource.data.updatedAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -115,6 +132,20 @@ service cloud.firestore {
                        request.resource.data.conversationId == resource.data.conversationId &&
                        request.resource.data.role == resource.data.role;
       allow delete: if isDocOwner();
+    }
+
+    match /memories/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidMemory();
+      allow update: if isOwner(userId) && isValidMemory();
+      allow delete: if isOwner(userId);
+    }
+
+    match /canvas_states/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidCanvasState();
+      allow update: if isOwner(userId) && isValidCanvasState();
+      allow delete: if isOwner(userId);
     }
   }
 }

@@ -1,22 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush, Monitor, Clock, BookOpen, Copy } from 'lucide-react';
+import { Send, Paperclip, Globe, Plus, MessageSquare, Menu, X, ChevronDown, User, Bot, FileText, Loader2, LogOut, Search, Trash2, Compass, Brush, Monitor, Clock, BookOpen, Copy, Calendar } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment } from './api';
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, DbMessage } from './db';
+import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, DbMessage, subscribeToMemory } from './db';
 import Canvas from './components/Canvas';
+import ScheduleTask from './components/ScheduleTask';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [currentPage, setCurrentPage] = useState<'chat' | 'schedule'>('chat');
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [messages, setMessages] = useState<AppMessage[]>([]);
+  const [currentMemory, setCurrentMemory] = useState<string>('');
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -67,6 +70,17 @@ export default function App() {
     }
   }, [currentConversationId, user]);
 
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToMemory(user.uid, (mem) => {
+        if (mem) {
+          setCurrentMemory(mem.content);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -100,6 +114,7 @@ export default function App() {
   const startNewChat = () => {
     setCurrentConversationId(null);
     setMessages([]);
+    setCurrentPage('chat');
   };
 
   const handleDeleteConversation = async (e: React.MouseEvent, id: string) => {
@@ -160,7 +175,12 @@ export default function App() {
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', isStreaming: true }]);
 
     try {
-      const stream = streamChat([...messages, newUserMsg], webSearch, liveBrowser, abortControllerRef.current.signal);
+      const stream = streamChat([...messages, newUserMsg], {
+        webSearch,
+        liveBrowser,
+        userId: user.uid,
+        currentMemory
+      }, abortControllerRef.current.signal);
       let fullContent = '';
       for await (const chunk of stream) {
         fullContent += chunk;
@@ -272,6 +292,16 @@ export default function App() {
       <div className={`${sidebarOpen ? 'w-[260px]' : 'w-0'} transition-all duration-300 flex-shrink-0 bg-black/40 backdrop-blur-xl border-r border-white/5 flex flex-col overflow-hidden z-20`}>
         <div className="p-3 pb-0 space-y-1">
           <button 
+            onClick={() => setCurrentPage('chat')}
+            className={`flex items-center gap-2 w-full p-2.5 rounded-lg transition-colors text-sm font-medium group ${currentPage === 'chat' ? 'bg-lime-400/10 text-lime-400' : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'}`}
+          >
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center ${currentPage === 'chat' ? 'bg-lime-400/20 text-lime-400' : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-400'}`}>
+              <MessageSquare size={16} />
+            </div>
+            Chat
+          </button>
+
+          <button 
             onClick={startNewChat}
             className="flex items-center gap-2 w-full p-2.5 rounded-lg hover:bg-lime-400/10 hover:text-lime-400 transition-colors text-sm font-medium group"
           >
@@ -279,6 +309,16 @@ export default function App() {
               <Plus size={16} />
             </div>
             New Chat
+          </button>
+
+          <button 
+            onClick={() => setCurrentPage('schedule')}
+            className={`flex items-center gap-2 w-full p-2.5 rounded-lg transition-colors text-sm font-medium group ${currentPage === 'schedule' ? 'bg-lime-400/10 text-lime-400' : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'}`}
+          >
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center ${currentPage === 'schedule' ? 'bg-lime-400/20 text-lime-400' : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-400'}`}>
+              <Calendar size={16} />
+            </div>
+            Schedule Task
           </button>
         </div>
         
@@ -314,7 +354,10 @@ export default function App() {
               {filteredConversations.map(convo => (
                 <div 
                   key={convo.id}
-                  onClick={() => setCurrentConversationId(convo.id)}
+                  onClick={() => {
+                    setCurrentConversationId(convo.id);
+                    setCurrentPage('chat');
+                  }}
                   className={`flex items-center justify-between w-full p-2 rounded-lg transition-colors text-sm text-left group cursor-pointer ${currentConversationId === convo.id ? 'bg-zinc-800' : 'hover:bg-zinc-800/50'}`}
                 >
                   <div className="flex items-center gap-2 overflow-hidden flex-1">
@@ -348,8 +391,12 @@ export default function App() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full relative min-w-0 z-10">
-        {/* Header */}
-        <header className="h-14 flex items-center justify-between px-4 z-10 bg-transparent">
+        {currentPage === 'schedule' ? (
+          <ScheduleTask onBack={() => setCurrentPage('chat')} />
+        ) : (
+          <>
+            {/* Header */}
+            <header className="h-14 flex items-center justify-between px-4 z-10 bg-transparent">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 -ml-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-lime-400 transition-colors">
               <Menu size={20} />
@@ -386,7 +433,7 @@ export default function App() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-zinc-700' : 'bg-emerald-600'}`}>
                     {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
-                  <div className={`flex flex-col gap-2 flex-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex flex-col gap-2 flex-1 min-w-0 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     {/* Attachments */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-1">
@@ -407,7 +454,7 @@ export default function App() {
                     
                     {/* Message Content */}
                     {msg.content && (
-                      <div className={`px-5 py-3.5 rounded-3xl max-w-3xl ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
+                      <div className={`px-5 py-3.5 rounded-3xl max-w-full sm:max-w-3xl break-words overflow-hidden ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
                         {msg.role === 'user' ? (
                           <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                         ) : (
@@ -419,7 +466,7 @@ export default function App() {
                             >
                               <Copy size={16} />
                             </button>
-                            <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-[2.2] prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl">
+                            <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-[2.2] prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl prose-pre:overflow-x-auto prose-pre:max-w-full">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
@@ -567,11 +614,14 @@ export default function App() {
             </div>
           </div>
         </div>
-      </div>
+      </>
+    )}
+  </div>
       {isCanvasOpen && (
         <Canvas 
           onClose={() => setIsCanvasOpen(false)} 
           user={user} 
+          currentMemory={currentMemory}
         />
       )}
     </div>
