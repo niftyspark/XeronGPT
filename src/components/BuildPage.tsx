@@ -19,7 +19,7 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
   const [isLoading, setIsLoading] = useState(false);
   const [code, setCode] = useState('<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: #39ff14; }\n    .container { border: 1px solid #39ff14; padding: 40px; border-radius: 20px; box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); text-align: center; }\n    h1 { margin: 0; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 4px; }\n    p { color: #888; margin-top: 10px; }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>System Ready</h1>\n    <p>AI Coding Assistant Initialized</p>\n  </div>\n</body>\n</html>');
   const [isLoaded, setIsLoaded] = useState(false);
-  const [viewMode, setViewMode] = useState<'split' | 'code' | 'preview'>('split');
+  const [viewMode, setViewMode] = useState<'preview'>('preview');
   const [activeTab, setActiveTab] = useState<'chat' | 'files'>('chat');
   const [copied, setCopied] = useState(false);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
@@ -170,38 +170,12 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
           </div>
         </div>
 
-        <div className="flex items-center bg-zinc-900/50 rounded-xl p-1 border border-white/5">
-          <button 
-            onClick={() => setViewMode('code')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'code' ? 'bg-lime-400 text-black shadow-lg shadow-lime-400/20' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Code size={14} />
-            Editor
-          </button>
-          <button 
-            onClick={() => setViewMode('split')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'split' ? 'bg-lime-400 text-black shadow-lg shadow-lime-400/20' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Maximize2 size={14} />
-            Split
-          </button>
-          <button 
-            onClick={() => setViewMode('preview')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'preview' ? 'bg-lime-400 text-black shadow-lg shadow-lime-400/20' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Globe size={14} />
-            Browser
-          </button>
+        <div className="flex items-center bg-zinc-900/50 rounded-xl px-4 py-1.5 border border-white/5 text-xs font-bold text-lime-400 gap-2">
+          <Globe size={14} />
+          Browser Preview
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
-            onClick={copyCode}
-            className="p-2 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-lime-400 transition-all"
-            title="Copy Code"
-          >
-            {copied ? <Check size={18} /> : <Copy size={18} />}
-          </button>
           <button className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-bold border border-white/5 transition-all flex items-center gap-2">
             <Save size={14} />
             Deploy
@@ -304,59 +278,37 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
           </div>
         </div>
 
-        {/* Main Content: Editor & Preview */}
+        {/* Main Content: Preview Only */}
         <div className="flex-1 flex overflow-hidden">
-          {(viewMode === 'code' || viewMode === 'split') && (
-            <div className={`flex-1 flex flex-col bg-[#0d0d0d] ${viewMode === 'split' ? 'border-r border-white/5' : ''}`}>
-              <div className="h-9 bg-zinc-900/50 border-b border-white/5 flex items-center px-4 justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/40" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/40" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/40" />
-                  <span className="text-[10px] font-bold text-zinc-500 ml-2 uppercase tracking-widest">index.html</span>
-                </div>
-                <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">HTML5 / CSS3</div>
+          <div className="flex-1 flex flex-col bg-white">
+            <div className="h-9 bg-zinc-100 border-b border-zinc-200 flex items-center px-4 gap-4">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-zinc-300" />
+                <div className="w-2 h-2 rounded-full bg-zinc-300" />
               </div>
-              <textarea 
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="flex-1 bg-transparent text-lime-400/90 font-mono text-sm p-6 focus:outline-none resize-none no-scrollbar leading-relaxed"
-                spellCheck={false}
-              />
-            </div>
-          )}
-
-          {(viewMode === 'preview' || viewMode === 'split') && (
-            <div className="flex-1 flex flex-col bg-white">
-              <div className="h-9 bg-zinc-100 border-b border-zinc-200 flex items-center px-4 gap-4">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 rounded-full bg-zinc-300" />
-                  <div className="w-2 h-2 rounded-full bg-zinc-300" />
-                </div>
-                <div className="flex-1 bg-white border border-zinc-200 rounded-md h-6 flex items-center px-3 gap-2">
-                  <Globe size={10} className="text-zinc-400" />
-                  <span className="text-[10px] text-zinc-400 font-medium truncate">https://build-engine.local/preview</span>
-                </div>
-                <button 
-                  onClick={() => {
-                    if (iframeRef.current) {
-                      iframeRef.current.srcdoc = code;
-                    }
-                  }}
-                  className="p-1.5 hover:bg-zinc-200 rounded-md text-zinc-500 transition-colors"
-                >
-                  <Play size={12} />
-                </button>
+              <div className="flex-1 bg-white border border-zinc-200 rounded-md h-6 flex items-center px-3 gap-2">
+                <Globe size={10} className="text-zinc-400" />
+                <span className="text-[10px] text-zinc-400 font-medium truncate">https://build-engine.local/preview</span>
               </div>
-              <iframe 
-                ref={iframeRef}
-                srcDoc={code}
-                title="Preview"
-                className="flex-1 w-full border-none bg-white"
-                sandbox="allow-scripts"
-              />
+              <button 
+                onClick={() => {
+                  if (iframeRef.current) {
+                    iframeRef.current.srcdoc = code;
+                  }
+                }}
+                className="p-1.5 hover:bg-zinc-200 rounded-md text-zinc-500 transition-colors"
+              >
+                <Play size={12} />
+              </button>
             </div>
-          )}
+            <iframe 
+              ref={iframeRef}
+              srcDoc={code}
+              title="Preview"
+              className="flex-1 w-full border-none bg-white"
+              sandbox="allow-scripts"
+            />
+          </div>
         </div>
       </div>
 
