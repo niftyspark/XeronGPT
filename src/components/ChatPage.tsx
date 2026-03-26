@@ -63,12 +63,12 @@ export default function ChatPage({
       {/* Clear Chat History Button */}
       <div className="absolute top-0 right-4 z-20 flex items-center gap-2">
         <button 
-          onClick={() => navigate('/build')}
+          onClick={() => setIsCanvasOpen(true)}
           className="p-2 rounded-lg hover:bg-zinc-800/50 text-zinc-400 hover:text-lime-400 transition-colors flex items-center gap-2 text-sm font-medium"
-          title="New Project"
+          title="Create Image"
         >
-          <Plus size={18} />
-          <span className="hidden sm:inline">New Project</span>
+          <Brush size={18} />
+          <span className="hidden sm:inline">Create Image</span>
         </button>
         {currentConversationId && (
           <button 

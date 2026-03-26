@@ -4,20 +4,86 @@ import * as cheerio from "cheerio";
 import cors from "cors";
 import path from "path";
 import { Composio } from "composio-core";
-import * as admin from 'firebase-admin';
+import { initializeApp, applicationDefault } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import cron from 'node-cron';
 
 // Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
+initializeApp({
+  credential: applicationDefault(),
   projectId: 'gen-lang-client-0096867322',
 });
 
-const db = admin.firestore();
+const db = getFirestore();
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY
 });
+
+async function runTask(taskDescription: string) {
+  const apiKey = process.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
+  
+  // Get tools
+  const toolsResponse = await composio.actions.list({});
+  const tools = toolsResponse.items.map((item: any) => ({
+    type: "function",
+    function: {
+      name: item.name,
+      description: item.description,
+      parameters: item.parameters
+    }
+  }));
+
+  let messages: any[] = [{ role: 'user', content: taskDescription }];
+  
+  for (let i = 0; i < 5; i++) { // Limit to 5 iterations to prevent infinite loops
+    const response = await fetch('https://ai.api.4everland.org/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'z-ai/glm-5-turbo',
+        messages,
+        tools,
+        temperature: 0.7,
+      }),
+    });
+    
+    const data = await response.json();
+    if (!data.choices || data.choices.length === 0) break;
+    const message = data.choices[0].message;
+    
+    if (message.tool_calls) {
+      messages.push(message);
+      for (const toolCall of message.tool_calls) {
+        try {
+          const result = await composio.actions.execute({
+            actionName: toolCall.function.name,
+            requestBody: { input: JSON.parse(toolCall.function.arguments) }
+          });
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify(result)
+          });
+        } catch (error) {
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: `Error executing tool: ${error}`
+          });
+        }
+      }
+    } else {
+      return message.content;
+    }
+  }
+  return "Task completed without final answer.";
+}
 
 async function startServer() {
   const app = express();
@@ -86,19 +152,7 @@ async function startServer() {
     for (const doc of snapshot.docs) {
       const task = doc.data();
       try {
-        const apiKey = process.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
-        await fetch('https://ai.api.4everland.org/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'z-ai/glm-5-turbo',
-            messages: [{ role: 'user', content: task.description }],
-            temperature: 0.7,
-          }),
-        });
+        await runTask(task.description);
         await doc.ref.update({ status: 'completed' });
       } catch (error) {
         console.error('Task execution error:', error);
