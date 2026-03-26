@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2, Bot, User } from 'lucide-react';
-import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment, performAutonomousLearning } from './api';
+import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment } from './api';
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, subscribeToMemory } from './db';
@@ -10,7 +10,6 @@ import BuildPage from './components/BuildPage';
 import MainLayout from './components/MainLayout';
 import ChatPage from './components/ChatPage';
 import ConfirmModal from './components/ConfirmModal';
-import { Toaster, toast } from 'sonner';
 
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
@@ -35,7 +34,6 @@ export default function App() {
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
-  const [autoLearnEnabled, setAutoLearnEnabled] = useState(false);
   
   // Modal state
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -99,24 +97,6 @@ export default function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  useEffect(() => {
-    if (!autoLearnEnabled || !user) return;
-
-    // Run every 60 seconds for demonstration purposes
-    const intervalId = setInterval(async () => {
-      try {
-        const newSkill = await performAutonomousLearning(user.uid, currentMemory, selectedModel);
-        if (newSkill) {
-          toast.success(`🧠 AI learned a new skill: ${newSkill.substring(0, 60)}...`);
-        }
-      } catch (error) {
-        console.error("Auto-learn error:", error);
-      }
-    }, 60000);
-
-    return () => clearInterval(intervalId);
-  }, [autoLearnEnabled, user, currentMemory, selectedModel]);
 
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
@@ -322,11 +302,9 @@ export default function App() {
             handleLogout={handleLogout}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            autoLearnEnabled={autoLearnEnabled}
-            setAutoLearnEnabled={setAutoLearnEnabled}
           >
             <Routes>
-              <Route path="/schedule" element={<ScheduleTask user={user} onBack={() => navigate('/')} />} />
+              <Route path="/schedule" element={<ScheduleTask onBack={() => navigate('/')} />} />
               <Route path="/" element={
                 <ChatPage
                   messages={messages}
@@ -376,7 +354,6 @@ export default function App() {
         confirmText="Delete"
         variant="danger"
       />
-      <Toaster theme="dark" position="top-center" />
     </>
   );
 }
