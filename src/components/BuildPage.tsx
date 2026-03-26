@@ -256,6 +256,11 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
       `;
     }
     
+    const isHtml = rawCode.includes('<html') || rawCode.includes('<body') || rawCode.includes('<div');
+    if (!isHtml) {
+      return `<html><body style="background: #050505; color: #fff; font-family: monospace; padding: 20px; white-space: pre-wrap;">${rawCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</body></html>`;
+    }
+
     return rawCode;
   };
 
@@ -283,9 +288,17 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
         isStreaming: true
       }]);
 
+      const systemPrompt = `You are an expert React developer. You build complete, working React applications. 
+When asked to build something, you MUST output a SINGLE, complete React component file that contains the entire application. 
+Use Tailwind CSS for styling via className.
+Do NOT output file trees, project structures, or multiple files. 
+Output the code inside a \`\`\`tsx code block. 
+The component should be the default export.
+Include all necessary imports (React, lucide-react, etc.) at the top.`;
+
       const stream = streamChat(
         [...messages, userMessage],
-        { userId: user?.uid, currentMemory, model: selectedModel }
+        { userId: user?.uid, currentMemory, model: selectedModel, systemPrompt }
       );
 
       for await (const chunk of stream) {
@@ -321,7 +334,7 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
   return (
     <div className="flex flex-col bg-[#050505] text-zinc-100 overflow-hidden h-screen w-screen fixed inset-0">
       {/* Header */}
-      <header className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-black/40 backdrop-blur-xl z-20">
+      <header className="h-14 shrink-0 border-b border-white/5 flex items-center justify-between px-4 bg-black/40 backdrop-blur-xl z-20">
         <div className="flex items-center gap-4">
           <button 
             onClick={onBack}
@@ -528,7 +541,7 @@ export default function BuildPage({ user, onBack, currentMemory }: BuildPageProp
       </div>
 
       {/* Footer Status Bar */}
-      <footer className="h-6 bg-lime-400 flex items-center px-4 justify-between text-black">
+      <footer className="h-6 shrink-0 bg-lime-400 flex items-center px-4 justify-between text-black">
         <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest">
           <div className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />

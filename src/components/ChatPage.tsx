@@ -57,17 +57,18 @@ export default function ChatPage({
   messagesEndRef
 }: ChatPageProps) {
   const navigate = useNavigate();
+
   return (
     <div className="flex flex-col h-full relative">
       {/* Clear Chat History Button */}
       <div className="absolute top-0 right-4 z-20 flex items-center gap-2">
         <button 
-          onClick={() => navigate('/build')}
+          onClick={() => setIsCanvasOpen(true)}
           className="p-2 rounded-lg hover:bg-zinc-800/50 text-zinc-400 hover:text-lime-400 transition-colors flex items-center gap-2 text-sm font-medium"
-          title="New Project"
+          title="Create Image"
         >
-          <Plus size={18} />
-          <span className="hidden sm:inline">New Project</span>
+          <Brush size={18} />
+          <span className="hidden sm:inline">Create Image</span>
         </button>
         {currentConversationId && (
           <button 
@@ -312,12 +313,6 @@ export default function ChatPage({
                   title="Live Code Canvas"
                 >
                   <Monitor size={20} />
-                </button>
-                <button 
-                  className="p-2 rounded-full text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 transition-colors flex items-center gap-2"
-                  title="Instructions"
-                >
-                  <BookOpen size={20} />
                 </button>
               </div>
               

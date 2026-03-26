@@ -218,8 +218,80 @@ async function* processOpenAIStream(apiMessages: any[], options: { model?: strin
   }
 }
 
-export async function* streamChat(messages: AppMessage[], options: { model?: string, webSearch?: boolean, liveBrowser?: boolean, userId?: string, currentMemory?: string } = {}, signal?: AbortSignal) {
-  const { model, webSearch, liveBrowser, userId, currentMemory } = options;
+export async function performAutonomousLearning(userId: string, currentMemory: string, model: string = DEFAULT_MODEL): Promise<string | null> {
+  try {
+    const systemPrompt = `You are an autonomous learning agent. Your current memory is:
+${currentMemory || 'Empty'}
+
+Your task:
+1. Identify a new, valuable software engineering concept, AI trend, or advanced programming skill that is NOT already in your memory.
+2. Write a concise 1-2 sentence summary of this new skill.
+3. Do NOT include any filler text. Just output the new fact/skill.`;
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'system', content: systemPrompt }],
+        temperature: 0.9,
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+
+    if (!reader) return null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        if (line.trim() === 'data: [DONE]') break;
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.choices && data.choices[0]?.delta?.content) {
+              fullContent += data.choices[0].delta.content;
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+    }
+
+    // Strip out <think> tags after accumulating the full content
+    const newSkill = fullContent.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    if (newSkill) {
+      const updatedMemory = currentMemory 
+        ? `${currentMemory}\n\n[Learned autonomously]: ${newSkill}`
+        : `[Learned autonomously]: ${newSkill}`;
+      
+      await updateMemory(userId, updatedMemory);
+      return newSkill;
+    }
+    return null;
+  } catch (error) {
+    console.error("Autonomous learning failed:", error);
+    return null;
+  }
+}
+
+export async function* streamChat(messages: AppMessage[], options: { model?: string, webSearch?: boolean, liveBrowser?: boolean, userId?: string, currentMemory?: string, systemPrompt?: string } = {}, signal?: AbortSignal) {
+  const { model, webSearch, liveBrowser, userId, currentMemory, systemPrompt } = options;
   
   const apiMessages = messages.map(m => {
     if (m.attachments && m.attachments.length > 0) {
@@ -238,6 +310,13 @@ export async function* streamChat(messages: AppMessage[], options: { model?: str
     }
     return { role: m.role, content: m.content };
   });
+
+  if (systemPrompt) {
+    apiMessages.unshift({
+      role: 'system',
+      content: systemPrompt
+    });
+  }
 
   if (userId) {
     const memoryPrompt = currentMemory 
