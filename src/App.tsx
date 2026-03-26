@@ -37,33 +37,6 @@ export default function App() {
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [autoLearnEnabled, setAutoLearnEnabled] = useState(false);
   
-  const handleGenerateImage = async (prompt: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-      if (!response.ok) throw new Error('Failed to generate image');
-      const data = await response.json();
-      const imageMsg: AppMessage = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: `![Generated Image](data:image/png;base64,${data.image})`,
-      };
-      setMessages(prev => [...prev, imageMsg]);
-      if (currentConversationId) {
-        await saveMessage(currentConversationId, user!.uid, 'assistant', imageMsg.content);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to generate image');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   // Modal state
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [convoToDelete, setConvoToDelete] = useState<string | null>(null);
@@ -353,7 +326,7 @@ export default function App() {
             setAutoLearnEnabled={setAutoLearnEnabled}
           >
             <Routes>
-              <Route path="/schedule" element={<ScheduleTask onBack={() => navigate('/')} />} />
+              <Route path="/schedule" element={<ScheduleTask user={user} onBack={() => navigate('/')} />} />
               <Route path="/" element={
                 <ChatPage
                   messages={messages}
@@ -361,7 +334,6 @@ export default function App() {
                   setInput={setInput}
                   isLoading={isLoading}
                   handleSend={handleSend}
-                  handleGenerateImage={handleGenerateImage}
                   stopGeneration={stopGeneration}
                   onFileChange={onFileChange}
                   attachments={attachments}

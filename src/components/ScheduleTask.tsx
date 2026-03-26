@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, ChevronLeft, Save, Trash2, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User as FirebaseUser } from 'firebase/auth';
 
 interface Task {
   id: string;
@@ -8,37 +9,66 @@ interface Task {
   time: string;
   description: string;
   status: 'pending' | 'completed';
+  userId: string;
 }
 
 interface ScheduleTaskProps {
+  user: FirebaseUser;
   onBack: () => void;
 }
 
-export default function ScheduleTask({ onBack }: ScheduleTaskProps) {
+export default function ScheduleTask({ user, onBack }: ScheduleTaskProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', date: '', time: '', description: '' });
 
-  const handleAddTask = () => {
+  useEffect(() => {
+    fetchTasks();
+  }, [user]);
+
+  const fetchTasks = async () => {
+    const response = await fetch(`/api/tasks?userId=${user.uid}`);
+    if (response.ok) {
+      const data = await response.json();
+      setTasks(data);
+    }
+  };
+
+  const handleAddTask = async () => {
     if (!newTask.title || !newTask.date || !newTask.time) return;
     
-    const task: Task = {
-      id: Date.now().toString(),
-      ...newTask,
-      status: 'pending'
-    };
-    
-    setTasks(prev => [task, ...prev]);
-    setNewTask({ title: '', date: '', time: '', description: '' });
-    setIsAdding(false);
+    const response = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...newTask, userId: user.uid }),
+    });
+
+    if (response.ok) {
+      fetchTasks();
+      setNewTask({ title: '', date: '', time: '', description: '' });
+      setIsAdding(false);
+    }
   };
 
-  const toggleStatus = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'pending' ? 'completed' : 'pending' } : t));
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+    const response = await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (response.ok) {
+      fetchTasks();
+    }
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+  const deleteTask = async (id: string) => {
+    const response = await fetch(`/api/tasks/${id}`, {
+      method: 'DELETE',
+    });
+    if (response.ok) {
+      fetchTasks();
+    }
   };
 
   return (
@@ -155,7 +185,7 @@ export default function ScheduleTask({ onBack }: ScheduleTaskProps) {
                   className={`group bg-zinc-900/40 border border-white/5 rounded-2xl p-5 flex items-center gap-6 transition-all hover:bg-zinc-900/60 hover:border-white/10 ${task.status === 'completed' ? 'opacity-60' : ''}`}
                 >
                   <button 
-                    onClick={() => toggleStatus(task.id)}
+                    onClick={() => toggleStatus(task.id, task.status)}
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${task.status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-zinc-500 hover:text-lime-400 border border-white/5'}`}
                   >
                     {task.status === 'completed' ? <CheckCircle2 size={24} /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}

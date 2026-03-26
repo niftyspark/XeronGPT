@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Send, Paperclip, Globe, Bot, User, FileText, Copy, Brush, Compass, Monitor, BookOpen, X, ChevronDown, Code, Plus, Image as ImageIcon } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { Send, Paperclip, Globe, Bot, User, FileText, Copy, Brush, Compass, Monitor, BookOpen, X, ChevronDown, Code, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AppMessage, Attachment, FOUR_EVERLAND_MODELS } from '../api';
@@ -11,7 +11,6 @@ interface ChatPageProps {
   setInput: (val: string) => void;
   isLoading: boolean;
   handleSend: () => void;
-  handleGenerateImage: (prompt: string) => Promise<void>;
   stopGeneration: () => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   attachments: Attachment[];
@@ -38,7 +37,6 @@ export default function ChatPage({
   setInput,
   isLoading,
   handleSend,
-  handleGenerateImage,
   stopGeneration,
   onFileChange,
   attachments,
@@ -59,8 +57,6 @@ export default function ChatPage({
   messagesEndRef
 }: ChatPageProps) {
   const navigate = useNavigate();
-  const [showImagePrompt, setShowImagePrompt] = useState(false);
-  const [imagePrompt, setImagePrompt] = useState('');
 
   return (
     <div className="flex flex-col h-full relative">
@@ -217,36 +213,6 @@ export default function ChatPage({
             </div>
           )}
 
-          {/* Image Prompt Dialog */}
-          {showImagePrompt && (
-            <div className="absolute bottom-full left-0 mb-3 p-4 bg-zinc-800 rounded-2xl border border-zinc-700 w-full shadow-lg z-30">
-              <div className="flex items-center gap-2 mb-2">
-                <ImageIcon size={18} className="text-lime-400" />
-                <span className="text-sm font-bold text-zinc-100">Generate Image</span>
-              </div>
-              <input
-                type="text"
-                value={imagePrompt}
-                onChange={(e) => setImagePrompt(e.target.value)}
-                placeholder="Describe the image you want to create..."
-                className="w-full bg-zinc-900 text-zinc-100 placeholder-zinc-500 p-2 rounded-xl border border-zinc-700 mb-3 focus:outline-none focus:border-lime-400"
-              />
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setShowImagePrompt(false)} className="px-3 py-1.5 text-xs font-bold text-zinc-400 hover:text-white">Cancel</button>
-                <button 
-                  onClick={() => {
-                    handleGenerateImage(imagePrompt);
-                    setShowImagePrompt(false);
-                    setImagePrompt('');
-                  }}
-                  className="px-3 py-1.5 text-xs font-bold bg-lime-400 text-black rounded-lg hover:bg-lime-500"
-                >
-                  Generate
-                </button>
-              </div>
-            </div>
-          )}
-
           <div className="relative flex flex-col bg-[#2f2f2f] border border-zinc-700 rounded-3xl shadow-lg focus-within:border-zinc-500 transition-all">
             <div className="flex items-center px-4 pt-3 pb-1">
               <div className="relative">
@@ -347,13 +313,6 @@ export default function ChatPage({
                   title="Live Code Canvas"
                 >
                   <Monitor size={20} />
-                </button>
-                <button 
-                  onClick={() => setShowImagePrompt(!showImagePrompt)}
-                  className="p-2 rounded-full text-zinc-400 hover:text-lime-400 hover:bg-lime-400/10 transition-colors flex items-center gap-2"
-                  title="Create Image"
-                >
-                  <ImageIcon size={20} />
                 </button>
               </div>
               

@@ -4,6 +4,16 @@ import * as cheerio from "cheerio";
 import cors from "cors";
 import path from "path";
 import { Composio } from "composio-core";
+import * as admin from 'firebase-admin';
+import cron from 'node-cron';
+
+// Initialize Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+  projectId: 'gen-lang-client-0096867322',
+});
+
+const db = admin.firestore();
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY
@@ -19,6 +29,81 @@ async function startServer() {
   // API routes FIRST
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  app.post("/api/tasks", async (req, res) => {
+    try {
+      const { title, date, time, description, userId } = req.body;
+      const task = { title, date, time, description, userId, status: 'pending' };
+      await db.collection('scheduledTasks').add(task);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/tasks", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      const snapshot = await db.collection('scheduledTasks').where('userId', '==', userId).get();
+      const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json(tasks);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/tasks/:id", async (req, res) => {
+    try {
+      await db.collection('scheduledTasks').doc(req.params.id).delete();
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/tasks/:id", async (req, res) => {
+    try {
+      const { status } = req.body;
+      await db.collection('scheduledTasks').doc(req.params.id).update({ status });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  cron.schedule('* * * * *', async () => {
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const currentDate = now.toISOString().split('T')[0];
+
+    const snapshot = await db.collection('scheduledTasks')
+      .where('date', '==', currentDate)
+      .where('time', '==', currentTime)
+      .where('status', '==', 'pending')
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const task = doc.data();
+      try {
+        const apiKey = process.env.VITE_4EVERLAND_API_KEY || 'f0750ba86ebae58e583d0536ebc22d41';
+        await fetch('https://ai.api.4everland.org/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'z-ai/glm-5-turbo',
+            messages: [{ role: 'user', content: task.description }],
+            temperature: 0.7,
+          }),
+        });
+        await doc.ref.update({ status: 'completed' });
+      } catch (error) {
+        console.error('Task execution error:', error);
+      }
+    }
   });
 
   app.post("/api/generate-image", async (req, res) => {
