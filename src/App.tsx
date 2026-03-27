@@ -33,7 +33,6 @@ export default function App() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
-  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [autoLearnEnabled, setAutoLearnEnabled] = useState(false);
   
   // Modal state
@@ -340,10 +339,6 @@ export default function App() {
                   setWebSearch={setWebSearch}
                   liveBrowser={liveBrowser}
                   setLiveBrowser={setLiveBrowser}
-                  selectedModel={selectedModel}
-                  setSelectedModel={setSelectedModel}
-                  isModelMenuOpen={isModelMenuOpen}
-                  setIsModelMenuOpen={setIsModelMenuOpen}
                   setIsCanvasOpen={setIsCanvasOpen}
                   currentConversationId={currentConversationId}
                   handleDeleteConversation={handleDeleteConversation}

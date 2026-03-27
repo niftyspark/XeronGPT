@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Send, Paperclip, Globe, Bot, User, FileText, Copy, Brush, Compass, Monitor, BookOpen, X, ChevronDown, Code, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { AppMessage, Attachment, FOUR_EVERLAND_MODELS } from '../api';
+import { AppMessage, Attachment } from '../api';
 import { useNavigate } from 'react-router-dom';
 
 interface ChatPageProps {
@@ -19,10 +19,6 @@ interface ChatPageProps {
   setWebSearch: (val: boolean) => void;
   liveBrowser: boolean;
   setLiveBrowser: (val: boolean) => void;
-  selectedModel: string;
-  setSelectedModel: (val: string) => void;
-  isModelMenuOpen: boolean;
-  setIsModelMenuOpen: (val: boolean) => void;
   setIsCanvasOpen: (val: boolean) => void;
   currentConversationId: string | null;
   handleDeleteConversation: (e: React.MouseEvent, id: string) => void;
@@ -45,10 +41,6 @@ export default function ChatPage({
   setWebSearch,
   liveBrowser,
   setLiveBrowser,
-  selectedModel,
-  setSelectedModel,
-  isModelMenuOpen,
-  setIsModelMenuOpen,
   setIsCanvasOpen,
   currentConversationId,
   handleDeleteConversation,
@@ -180,11 +172,11 @@ export default function ChatPage({
       </div>
 
       {/* Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-10 pb-6 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto relative">
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-16 pb-6 px-4 sm:px-6 border-t border-zinc-800">
+        <div className="max-w-3xl w-full relative">
           {/* Attachments Preview */}
           {attachments.length > 0 && (
-            <div className="absolute bottom-full left-0 mb-3 flex flex-wrap gap-2 p-2 bg-zinc-800/90 backdrop-blur-md rounded-2xl border border-zinc-700 w-full shadow-lg">
+            <div className="mb-3 flex flex-wrap gap-2 p-2 bg-zinc-800/90 backdrop-blur-md rounded-2xl border border-zinc-700 w-full shadow-lg">
               {attachments.map(att => (
                 <div key={att.id} className="relative group flex items-center gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-700 max-w-[200px]">
                   {att.type === 'image' ? (
@@ -207,38 +199,6 @@ export default function ChatPage({
           )}
 
           <div className="relative flex flex-col bg-[#2f2f2f] border border-zinc-700 rounded-3xl shadow-lg focus-within:border-zinc-500 transition-all">
-            <div className="flex items-center px-4 pt-3 pb-1">
-              <div className="relative">
-                <button 
-                  onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-1 bg-zinc-800/50 border border-zinc-700/50 rounded-full text-[10px] font-bold text-zinc-400 hover:text-emerald-400 transition-all"
-                >
-                  {selectedModel.split('/').pop()}
-                  <ChevronDown size={12} />
-                </button>
-                
-                {isModelMenuOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    <div className="p-3 border-b border-zinc-800 bg-black/20">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">4EVERLAND Models</span>
-                    </div>
-                    {FOUR_EVERLAND_MODELS.map(model => (
-                      <button
-                        key={model}
-                        onClick={() => {
-                          setSelectedModel(model);
-                          setIsModelMenuOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2.5 text-[10px] font-bold transition-colors ${selectedModel === model ? 'bg-emerald-400 text-black' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
-                      >
-                        {model}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
             <textarea
               ref={textareaRef}
               value={input}
@@ -250,7 +210,7 @@ export default function ChatPage({
                 }
               }}
               placeholder="Message AI..."
-              className="w-full max-h-48 min-h-[56px] bg-transparent text-zinc-100 placeholder-zinc-400 resize-none pt-1 pb-4 pl-5 pr-12 focus:outline-none rounded-3xl"
+              className="w-full max-h-48 min-h-[40px] bg-transparent text-zinc-100 placeholder-zinc-400 resize-none pt-3 pb-4 pl-5 pr-12 focus:outline-none rounded-3xl"
               rows={1}
               style={{ height: 'auto' }}
               onInput={(e) => {
