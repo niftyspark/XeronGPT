@@ -6,7 +6,6 @@ import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User 
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, subscribeToMemory } from './db';
 import Canvas from './components/Canvas';
 import ScheduleTask from './components/ScheduleTask';
-import BuildPage from './components/BuildPage';
 import MainLayout from './components/MainLayout';
 import ChatPage from './components/ChatPage';
 import ConfirmModal from './components/ConfirmModal';
@@ -310,7 +309,6 @@ export default function App() {
   return (
     <>
       <Routes>
-        <Route path="/build" element={<BuildPage user={user} onBack={() => navigate('/')} currentMemory={currentMemory} />} />
         <Route path="/*" element={
           <MainLayout
             user={user}

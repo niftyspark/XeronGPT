@@ -62,14 +62,6 @@ export default function ChatPage({
     <div className="flex flex-col h-full relative">
       {/* Clear Chat History Button */}
       <div className="absolute top-0 right-4 z-20 flex items-center gap-2">
-        <button 
-          onClick={() => setIsCanvasOpen(true)}
-          className="p-2 rounded-lg hover:bg-zinc-800/50 text-zinc-400 hover:text-lime-400 transition-colors flex items-center gap-2 text-sm font-medium"
-          title="Create Image"
-        >
-          <Brush size={18} />
-          <span className="hidden sm:inline">Create Image</span>
-        </button>
         {currentConversationId && (
           <button 
             onClick={(e) => handleDeleteConversation(e, currentConversationId)}
@@ -142,23 +134,24 @@ export default function ChatPage({
                                 code({node, className, children, ...props}) {
                                   const isInline = !className;
                                   if (isInline) return <code className={className} {...props}>{children}</code>;
+                                  
+                                  const codeContent = String(children).replace(/\n$/, '');
+                                  
                                   return (
-                                    <div className="my-4 p-3 bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center justify-between group transition-all hover:border-lime-400/30">
-                                      <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center text-lime-400 border border-white/5 shadow-inner">
-                                          <Code size={20} />
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-100">Generated Artifact</span>
-                                          <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Ready to build in IDE</span>
-                                        </div>
+                                    <div className="my-4 bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden group">
+                                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Code</span>
+                                        <button 
+                                          onClick={() => navigator.clipboard.writeText(codeContent)}
+                                          className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-lime-400 transition-colors"
+                                          title="Copy code"
+                                        >
+                                          <Copy size={14} />
+                                        </button>
                                       </div>
-                                      <button 
-                                        onClick={() => navigate('/build')}
-                                        className="px-4 py-2 bg-lime-400 text-black text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:scale-105 active:scale-95"
-                                      >
-                                        Open IDE
-                                      </button>
+                                      <pre className="p-4 overflow-x-auto text-sm text-zinc-100">
+                                        <code>{children}</code>
+                                      </pre>
                                     </div>
                                   );
                                 }
