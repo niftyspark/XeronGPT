@@ -79,14 +79,14 @@ export default function ChatPage({
             </div>
           ) : (
             messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div key={msg.id} className={`flex items-start gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-zinc-700' : 'bg-emerald-600'}`}>
                   {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                 </div>
                 <div className={`flex flex-col gap-2 flex-1 min-w-0 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   {/* Attachments */}
                   {msg.attachments && msg.attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-1">
+                    <div className={`flex flex-wrap gap-2 mb-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       {msg.attachments.map(att => (
                         <div key={att.id} className="flex items-center gap-2 bg-zinc-800 p-2 rounded-xl border border-zinc-700 max-w-xs">
                           {att.type === 'image' ? (
@@ -104,7 +104,7 @@ export default function ChatPage({
                   
                   {/* Message Content */}
                   {msg.content && (
-                    <div className={`px-5 py-3.5 rounded-3xl max-w-full sm:max-w-3xl break-words overflow-hidden ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
+                    <div className={`px-5 py-3.5 rounded-3xl w-full break-words overflow-hidden ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
                       {msg.role === 'user' ? (
                         <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                       ) : (
@@ -164,6 +164,8 @@ export default function ChatPage({
                     </div>
                   )}
                 </div>
+                {/* Spacer to balance avatar and ensure content is centered */}
+                <div className="w-8 h-8 flex-shrink-0 hidden sm:block" />
               </div>
             ))
           )}
@@ -172,7 +174,7 @@ export default function ChatPage({
       </div>
 
       {/* Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-16 pb-6 px-4 sm:px-6 border-t border-zinc-800">
+      <div className="flex flex-col items-center bg-[#212121] pt-8 pb-6 px-4 sm:px-6 border-t border-zinc-800">
         <div className="max-w-3xl w-full relative">
           {/* Attachments Preview */}
           {attachments.length > 0 && (
