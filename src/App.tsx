@@ -228,18 +228,22 @@ export default function App() {
   };
 
   const handleSend = async (
-    overrideInput?: string,
+    overrideInput?: string | React.MouseEvent | React.KeyboardEvent,
     overrideLiveBrowser?: boolean,
     overrideConversationId?: string | null,
     overrideMessages?: AppMessage[]
   ) => {
-    const currentInput = overrideInput !== undefined ? overrideInput : input;
-    if (overrideLiveBrowser !== undefined) {
+    let currentInput = input;
+    if (typeof overrideInput === 'string') {
+      currentInput = overrideInput;
+    }
+    
+    if (overrideLiveBrowser !== undefined && typeof overrideLiveBrowser === 'boolean') {
       setLiveBrowser(overrideLiveBrowser);
     }
-    const currentLiveBrowser = overrideLiveBrowser !== undefined ? overrideLiveBrowser : liveBrowser;
-    const currentMessages = overrideMessages !== undefined ? overrideMessages : messages;
-    let convoId = overrideConversationId !== undefined ? overrideConversationId : currentConversationId;
+    const currentLiveBrowser = overrideLiveBrowser !== undefined && typeof overrideLiveBrowser === 'boolean' ? overrideLiveBrowser : liveBrowser;
+    const currentMessages = overrideMessages !== undefined && Array.isArray(overrideMessages) ? overrideMessages : messages;
+    let convoId = overrideConversationId !== undefined && typeof overrideConversationId === 'string' ? overrideConversationId : currentConversationId;
 
     if ((!currentInput.trim() && attachments.length === 0) || isLoading || !user) return;
 

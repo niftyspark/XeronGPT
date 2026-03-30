@@ -1,9 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not defined in the environment.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export async function generateImage(prompt: string): Promise<string | null> {
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -29,6 +36,6 @@ export async function generateImage(prompt: string): Promise<string | null> {
     return null;
   } catch (error) {
     console.error("Image generation failed:", error);
-    return null;
+    throw error; // Re-throw to be caught by handleSend
   }
 }
