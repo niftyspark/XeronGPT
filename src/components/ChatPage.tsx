@@ -25,6 +25,7 @@ interface ChatPageProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  onPaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
 }
 
 const MessageBubble = ({ msg }: { msg: AppMessage }) => {
@@ -151,7 +152,8 @@ export default function ChatPage({
   handleDeleteConversation,
   fileInputRef,
   textareaRef,
-  messagesEndRef
+  messagesEndRef,
+  onPaste
 }: ChatPageProps) {
   const navigate = useNavigate();
 
@@ -223,6 +225,7 @@ export default function ChatPage({
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onPaste={onPaste}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();

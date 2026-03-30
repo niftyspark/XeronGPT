@@ -349,6 +349,31 @@ export default function App() {
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const newAttachments: Attachment[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            const att = await handleFileUpload(file);
+            newAttachments.push({ ...att, id: Date.now().toString() + i });
+          } catch (err) {
+            console.error('Failed to read pasted image', err);
+          }
+        }
+      }
+    }
+    
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
+    }
+  };
+
   if (!isAuthReady) {
     return <div className="flex h-screen items-center justify-center bg-[#212121] text-white"><Loader2 className="animate-spin" /></div>;
   }
@@ -420,6 +445,7 @@ export default function App() {
                   fileInputRef={fileInputRef}
                   textareaRef={textareaRef}
                   messagesEndRef={messagesEndRef}
+                  onPaste={handlePaste}
                 />
               } />
             </Routes>
