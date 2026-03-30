@@ -119,6 +119,18 @@ const MessageBubble = ({ msg }: { msg: AppMessage }) => {
             )}
           </div>
         )}
+
+        {/* Generated Image */}
+        {msg.generatedImage && (
+          <div className="mt-2 rounded-2xl overflow-hidden border border-zinc-800 shadow-lg max-w-lg">
+            <img 
+              src={msg.generatedImage} 
+              alt="Generated AI" 
+              className="w-full h-auto object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        )}
         {msg.isStreaming && !msg.content && (
           <div className="flex items-center gap-1.5 h-6 px-4 py-2 bg-zinc-800/50 rounded-full w-fit mt-2">
             <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

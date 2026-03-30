@@ -11,4 +11,5 @@ export type AppMessage = {
   content: string;
   attachments?: Attachment[];
   isStreaming?: boolean;
+  generatedImage?: string;
 };

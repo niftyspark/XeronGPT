@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Loader2, Bot, User } from 'lucide-react';
 import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment, performAutonomousLearning } from './api';
+import { generateImage } from './gemini';
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, subscribeToMemory, subscribeToTasks, Task, updateTaskStatus } from './db';
@@ -70,7 +71,8 @@ export default function App() {
         const appMsgs: AppMessage[] = dbMsgs.map(m => ({
           id: m.id,
           role: m.role,
-          content: m.content
+          content: m.content,
+          generatedImage: m.generatedImage
         }));
         setMessages(appMsgs);
       });
@@ -274,6 +276,40 @@ export default function App() {
     }
 
     await saveMessage(convoId, user.uid, 'user', newUserMsg.content);
+
+    // Check for image generation request
+    const imageKeywords = ['generate image', 'create image', 'draw', 'make an image', 'show me an image'];
+    const isImageRequest = imageKeywords.some(keyword => currentInput.toLowerCase().includes(keyword));
+
+    if (isImageRequest) {
+      const assistantMsgId = (Date.now() + 1).toString();
+      setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: 'Generating image...', isStreaming: true }]);
+      
+      try {
+        const imageUrl = await generateImage(currentInput);
+        if (imageUrl) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMsgId 
+              ? { ...msg, content: 'Here is the image you requested:', generatedImage: imageUrl, isStreaming: false }
+              : msg
+          ));
+          await saveMessage(convoId, user.uid, 'assistant', 'Here is the image you requested:', imageUrl);
+        } else {
+          throw new Error("Failed to generate image.");
+        }
+      } catch (error: any) {
+        const errorMsg = `**Error:** ${error.message}`;
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMsgId 
+            ? { ...msg, content: errorMsg, isStreaming: false }
+            : msg
+        ));
+        await saveMessage(convoId, user.uid, 'assistant', errorMsg);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     const assistantMsgId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', isStreaming: true }]);
