@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, ChevronLeft, Save, Trash2, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
-
-interface Task {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  description: string;
-  status: 'pending' | 'completed';
-  userId: string;
-}
+import { subscribeToTasks, createTask, updateTaskStatus, deleteTask, Task } from '../db';
+import { toast } from 'sonner';
 
 interface ScheduleTaskProps {
   user: FirebaseUser;
@@ -23,51 +15,49 @@ export default function ScheduleTask({ user, onBack }: ScheduleTaskProps) {
   const [newTask, setNewTask] = useState({ title: '', date: '', time: '', description: '' });
 
   useEffect(() => {
-    fetchTasks();
+    const unsubscribe = subscribeToTasks(user.uid, (data) => {
+      setTasks(data);
+    });
+    return () => unsubscribe();
   }, [user]);
 
-  const fetchTasks = async () => {
-    const response = await fetch(`/api/tasks?userId=${user.uid}`);
-    if (response.ok) {
-      const data = await response.json();
-      setTasks(data);
-    }
-  };
-
   const handleAddTask = async () => {
-    if (!newTask.title || !newTask.date || !newTask.time) return;
+    if (!newTask.title || !newTask.date || !newTask.time) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
     
-    const response = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newTask, userId: user.uid }),
-    });
-
-    if (response.ok) {
-      fetchTasks();
+    const pendingTasks = tasks.filter(t => t.status === 'pending');
+    if (pendingTasks.length >= 5) {
+      toast.error("You can only have up to 5 pending tasks at a time.");
+      return;
+    }
+    
+    try {
+      await createTask(user.uid, newTask);
       setNewTask({ title: '', date: '', time: '', description: '' });
       setIsAdding(false);
+      toast.success("Task scheduled successfully.");
+    } catch (error) {
+      toast.error("Failed to schedule task.");
     }
   };
 
   const toggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
-    const response = await fetch(`/api/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    if (response.ok) {
-      fetchTasks();
+    try {
+      await updateTaskStatus(id, newStatus as 'pending' | 'completed');
+    } catch (error) {
+      toast.error("Failed to update task status.");
     }
   };
 
-  const deleteTask = async (id: string) => {
-    const response = await fetch(`/api/tasks/${id}`, {
-      method: 'DELETE',
-    });
-    if (response.ok) {
-      fetchTasks();
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteTask(id);
+      toast.success("Task deleted.");
+    } catch (error) {
+      toast.error("Failed to delete task.");
     }
   };
 
@@ -218,7 +208,7 @@ export default function ScheduleTask({ user, onBack }: ScheduleTaskProps) {
                   </div>
 
                   <button 
-                    onClick={() => deleteTask(task.id)}
+                    onClick={() => handleDeleteTask(task.id)}
                     className="p-3 rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition-all"
                   >
                     <Trash2 size={20} />

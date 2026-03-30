@@ -83,6 +83,66 @@ export type CanvasState = {
   updatedAt: Timestamp;
 };
 
+export type Task = {
+  id: string;
+  userId: string;
+  title: string;
+  date: string;
+  time: string;
+  description: string;
+  status: 'pending' | 'completed';
+  createdAt: Timestamp;
+};
+
+export function subscribeToTasks(userId: string, callback: (tasks: Task[]) => void) {
+  const q = query(
+    collection(db, 'tasks'),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const tasks = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Task[];
+    callback(tasks);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, 'tasks');
+  });
+}
+
+export async function createTask(userId: string, taskData: Omit<Task, 'id' | 'userId' | 'createdAt' | 'status'>) {
+  try {
+    const docRef = await addDoc(collection(db, 'tasks'), {
+      ...taskData,
+      userId,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, 'tasks');
+    throw error;
+  }
+}
+
+export async function updateTaskStatus(taskId: string, status: 'pending' | 'completed') {
+  try {
+    await updateDoc(doc(db, 'tasks', taskId), { status });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `tasks/${taskId}`);
+  }
+}
+
+export async function deleteTask(taskId: string) {
+  try {
+    await deleteDoc(doc(db, 'tasks', taskId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `tasks/${taskId}`);
+  }
+}
+
 export function subscribeToConversations(userId: string, callback: (conversations: Conversation[]) => void) {
   const q = query(
     collection(db, 'conversations'),

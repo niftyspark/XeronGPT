@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Send, Paperclip, Globe, Bot, User, FileText, Copy, Brush, Compass, Monitor, BookOpen, X, ChevronDown, Code, Plus } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Send, Paperclip, Globe, Bot, User, FileText, Copy, Check, Brush, Compass, Monitor, BookOpen, X, ChevronDown, Code, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AppMessage, Attachment } from '../api';
@@ -26,6 +26,111 @@ interface ChatPageProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
+
+const MessageBubble = ({ msg }: { msg: AppMessage }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div key={msg.id} className={`flex items-start gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-zinc-700' : 'bg-emerald-600'}`}>
+        {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+      </div>
+      <div className={`flex flex-col gap-2 flex-1 min-w-0 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+        {/* Attachments */}
+        {msg.attachments && msg.attachments.length > 0 && (
+          <div className={`flex flex-wrap gap-2 mb-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.attachments.map(att => (
+              <div key={att.id} className="flex items-center gap-2 bg-zinc-800 p-2 rounded-xl border border-zinc-700 max-w-xs">
+                {att.type === 'image' ? (
+                  <img src={att.data} alt={att.name} referrerPolicy="no-referrer" className="w-12 h-12 object-cover rounded-lg" />
+                ) : (
+                  <div className="w-12 h-12 bg-zinc-700 rounded-lg flex items-center justify-center">
+                    <FileText size={20} className="text-zinc-400" />
+                  </div>
+                )}
+                <div className="text-sm truncate pr-2 font-medium">{att.name}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Message Content */}
+        {msg.content && (
+          <div className={`px-5 py-3.5 rounded-3xl w-full break-words overflow-hidden relative group ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
+            {msg.role === 'user' ? (
+              <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+            ) : (
+              <>
+                <button
+                  onClick={handleCopy}
+                  className={`absolute top-2 right-2 p-2 rounded-xl transition-all duration-200 z-10 ${
+                    copied 
+                      ? 'bg-emerald-500/20 text-emerald-400 opacity-100' 
+                      : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-100 opacity-0 group-hover:opacity-100'
+                  }`}
+                  title="Copy to clipboard"
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+                <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-[2.2] prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl prose-pre:overflow-x-auto prose-pre:max-w-full">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="text-lime-400 uppercase font-bold" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-lime-400 uppercase font-bold" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-lime-400 uppercase font-bold" {...props} />,
+                      code({node, className, children, ...props}) {
+                        const isInline = !className;
+                        if (isInline) return <code className={className} {...props}>{children}</code>;
+                        
+                        const codeContent = String(children).replace(/\n$/, '');
+                        
+                        return (
+                          <div className="my-4 bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden group/code">
+                            <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Code</span>
+                              <button 
+                                onClick={() => navigator.clipboard.writeText(codeContent)}
+                                className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-lime-400 transition-colors"
+                                title="Copy code"
+                              >
+                                <Copy size={14} />
+                              </button>
+                            </div>
+                            <pre className="p-4 overflow-x-auto text-sm text-zinc-100">
+                              <code>{children}</code>
+                            </pre>
+                          </div>
+                        );
+                      }
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        {msg.isStreaming && !msg.content && (
+          <div className="flex items-center gap-1.5 h-6 px-4 py-2 bg-zinc-800/50 rounded-full w-fit mt-2">
+            <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        )}
+      </div>
+      {/* Spacer to balance avatar and ensure content is centered */}
+      <div className="w-8 h-8 flex-shrink-0 hidden sm:block" />
+    </div>
+  );
+};
 
 export default function ChatPage({
   messages,
@@ -79,94 +184,7 @@ export default function ChatPage({
             </div>
           ) : (
             messages.map((msg) => (
-              <div key={msg.id} className={`flex items-start gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-zinc-700' : 'bg-emerald-600'}`}>
-                  {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
-                </div>
-                <div className={`flex flex-col gap-2 flex-1 min-w-0 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  {/* Attachments */}
-                  {msg.attachments && msg.attachments.length > 0 && (
-                    <div className={`flex flex-wrap gap-2 mb-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      {msg.attachments.map(att => (
-                        <div key={att.id} className="flex items-center gap-2 bg-zinc-800 p-2 rounded-xl border border-zinc-700 max-w-xs">
-                          {att.type === 'image' ? (
-                            <img src={att.data} alt={att.name} referrerPolicy="no-referrer" className="w-12 h-12 object-cover rounded-lg" />
-                          ) : (
-                            <div className="w-12 h-12 bg-zinc-700 rounded-lg flex items-center justify-center">
-                              <FileText size={20} className="text-zinc-400" />
-                            </div>
-                          )}
-                          <div className="text-sm truncate pr-2 font-medium">{att.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Message Content */}
-                  {msg.content && (
-                    <div className={`px-5 py-3.5 rounded-3xl w-full break-words overflow-hidden ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900/50 border border-zinc-800 text-zinc-100'}`}>
-                      {msg.role === 'user' ? (
-                        <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
-                      ) : (
-                        <div className="relative group">
-                          <button
-                            onClick={() => navigator.clipboard.writeText(msg.content)}
-                            className="absolute -top-10 right-0 p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Copy to clipboard"
-                          >
-                            <Copy size={16} />
-                          </button>
-                          <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-[2.2] prose-pre:bg-[#0d0d0d] prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl prose-pre:overflow-x-auto prose-pre:max-w-full">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                h1: ({node, ...props}) => <h1 className="text-lime-400 uppercase font-bold" {...props} />,
-                                h2: ({node, ...props}) => <h2 className="text-lime-400 uppercase font-bold" {...props} />,
-                                h3: ({node, ...props}) => <h3 className="text-lime-400 uppercase font-bold" {...props} />,
-                                code({node, className, children, ...props}) {
-                                  const isInline = !className;
-                                  if (isInline) return <code className={className} {...props}>{children}</code>;
-                                  
-                                  const codeContent = String(children).replace(/\n$/, '');
-                                  
-                                  return (
-                                    <div className="my-4 bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden group">
-                                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Code</span>
-                                        <button 
-                                          onClick={() => navigator.clipboard.writeText(codeContent)}
-                                          className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-lime-400 transition-colors"
-                                          title="Copy code"
-                                        >
-                                          <Copy size={14} />
-                                        </button>
-                                      </div>
-                                      <pre className="p-4 overflow-x-auto text-sm text-zinc-100">
-                                        <code>{children}</code>
-                                      </pre>
-                                    </div>
-                                  );
-                                }
-                              }}
-                            >
-                              {msg.content}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {msg.isStreaming && !msg.content && (
-                    <div className="flex items-center gap-1.5 h-6 px-4 py-2 bg-zinc-800/50 rounded-full w-fit mt-2">
-                      <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  )}
-                </div>
-                {/* Spacer to balance avatar and ensure content is centered */}
-                <div className="w-8 h-8 flex-shrink-0 hidden sm:block" />
-              </div>
+              <MessageBubble key={msg.id} msg={msg} />
             ))
           )}
           <div ref={messagesEndRef} />
@@ -261,13 +279,6 @@ export default function ChatPage({
                 >
                   <Compass size={20} />
                   {liveBrowser && <span className="text-xs font-medium pr-1">Browser Agent</span>}
-                </button>
-                <button 
-                  onClick={() => setIsCanvasOpen(true)}
-                  className="p-2 rounded-full text-zinc-400 hover:text-lime-400 hover:bg-lime-400/10 transition-colors flex items-center gap-2"
-                  title="Live Code Canvas"
-                >
-                  <Monitor size={20} />
                 </button>
               </div>
               

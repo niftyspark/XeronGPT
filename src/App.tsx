@@ -3,7 +3,7 @@ import { Loader2, Bot, User } from 'lucide-react';
 import { streamChat, DEFAULT_MODEL, AppMessage, handleFileUpload, Attachment, performAutonomousLearning } from './api';
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, subscribeToMemory } from './db';
+import { subscribeToConversations, subscribeToMessages, createConversation, saveMessage, deleteConversation, Conversation, subscribeToMemory, subscribeToTasks, Task, updateTaskStatus } from './db';
 import Canvas from './components/Canvas';
 import ScheduleTask from './components/ScheduleTask';
 import MainLayout from './components/MainLayout';
@@ -22,6 +22,7 @@ export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [tasks, setTasks] = useState<Task[]>([]);
   
   const [messages, setMessages] = useState<AppMessage[]>([]);
   const [currentMemory, setCurrentMemory] = useState<string>('');
@@ -89,6 +90,61 @@ export default function App() {
       return () => unsubscribe();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToTasks(user.uid, (data) => {
+        setTasks(data);
+      });
+      return () => unsubscribe();
+    } else {
+      setTasks([]);
+    }
+  }, [user]);
+
+  const handleSendRef = useRef<typeof handleSend | null>(null);
+  const triggeredTasksRef = useRef<Set<string>>(new Set());
+  
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  });
+
+  useEffect(() => {
+    if (!user || tasks.length === 0) return;
+
+    const checkTasks = async () => {
+      const now = new Date();
+      const pendingTasks = tasks.filter(t => t.status === 'pending');
+      
+      for (const task of pendingTasks) {
+        const taskDateTime = new Date(`${task.date}T${task.time}`);
+        if (now >= taskDateTime && !triggeredTasksRef.current.has(task.id)) {
+          // Mark as triggered locally to prevent duplicates
+          triggeredTasksRef.current.add(task.id);
+          
+          // Trigger task
+          await updateTaskStatus(task.id, 'completed');
+          toast.success(`Scheduled task triggered: ${task.title}`);
+          
+          // Start new chat with task description
+          const prompt = task.description || task.title;
+          
+          // Navigate to home if not already there
+          if (location.pathname !== '/') {
+            navigate('/');
+          }
+          
+          // Trigger handleSend with overrides
+          if (handleSendRef.current) {
+            handleSendRef.current(prompt, true, null, []);
+          }
+        }
+      }
+    };
+
+    const intervalId = setInterval(checkTasks, 10000); // Check every 10 seconds
+    return () => clearInterval(intervalId);
+  }, [tasks, user, location.pathname, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -169,12 +225,24 @@ export default function App() {
     }
   };
 
-  const handleSend = async () => {
-    if ((!input.trim() && attachments.length === 0) || isLoading || !user) return;
+  const handleSend = async (
+    overrideInput?: string,
+    overrideLiveBrowser?: boolean,
+    overrideConversationId?: string | null,
+    overrideMessages?: AppMessage[]
+  ) => {
+    const currentInput = overrideInput !== undefined ? overrideInput : input;
+    if (overrideLiveBrowser !== undefined) {
+      setLiveBrowser(overrideLiveBrowser);
+    }
+    const currentLiveBrowser = overrideLiveBrowser !== undefined ? overrideLiveBrowser : liveBrowser;
+    const currentMessages = overrideMessages !== undefined ? overrideMessages : messages;
+    let convoId = overrideConversationId !== undefined ? overrideConversationId : currentConversationId;
+
+    if ((!currentInput.trim() && attachments.length === 0) || isLoading || !user) return;
 
     setIsLoading(true);
     abortControllerRef.current = new AbortController();
-    const currentInput = input;
     const currentAttachments = [...attachments];
 
     const newUserMsg: AppMessage = {
@@ -183,15 +251,22 @@ export default function App() {
       content: currentInput,
       attachments: currentAttachments
     };
-    setMessages(prev => [...prev, newUserMsg]);
-    setInput('');
+    
+    if (overrideMessages !== undefined) {
+      setMessages([...overrideMessages, newUserMsg]);
+    } else {
+      setMessages(prev => [...prev, newUserMsg]);
+    }
+    
+    if (overrideInput === undefined) {
+      setInput('');
+    }
     setAttachments([]);
     
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
 
-    let convoId = currentConversationId;
     if (!convoId) {
       const title = currentInput.trim().substring(0, 40) || "New Conversation";
       convoId = await createConversation(user.uid, title);
@@ -204,9 +279,9 @@ export default function App() {
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', isStreaming: true }]);
 
     try {
-      const stream = streamChat([...messages, newUserMsg], {
+      const stream = streamChat([...currentMessages, newUserMsg], {
         webSearch,
-        liveBrowser,
+        liveBrowser: currentLiveBrowser,
         userId: user.uid,
         currentMemory,
         model: selectedModel

@@ -104,6 +104,18 @@ service cloud.firestore {
              request.resource.data.updatedAt is timestamp;
     }
 
+    function isValidTask() {
+      return hasOnlyAllowedFields(['userId', 'title', 'date', 'time', 'description', 'status', 'createdAt']) &&
+             hasRequiredFields(['userId', 'title', 'date', 'time', 'description', 'status', 'createdAt']) &&
+             validStringLength('userId', 1, 128) &&
+             validStringLength('title', 1, 200) &&
+             validStringLength('date', 1, 20) &&
+             validStringLength('time', 1, 20) &&
+             validStringLength('description', 0, 10000) &&
+             request.resource.data.status in ['pending', 'completed'] &&
+             request.resource.data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -146,6 +158,18 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidCanvasState();
       allow update: if isOwner(userId) && isValidCanvasState();
       allow delete: if isOwner(userId);
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && 
+                       isValidTask() && 
+                       uidUnchanged();
+      allow update: if isDocOwner() && 
+                       isValidTask() && 
+                       uidNotModified() &&
+                       request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner();
     }
   }
 }

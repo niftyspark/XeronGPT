@@ -83,16 +83,6 @@ export default function MainLayout({
             </div>
             Schedule Task
           </Link>
-
-          <Link 
-            to="/build"
-            className={`flex items-center gap-2 w-full p-2.5 rounded-lg transition-colors text-sm font-medium group ${location.pathname === '/build' ? 'bg-lime-400/10 text-lime-400' : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'}`}
-          >
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center ${location.pathname === '/build' ? 'bg-lime-400/20 text-lime-400' : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-400'}`}>
-              <Code size={16} />
-            </div>
-            Build
-          </Link>
         </div>
         
         <div className="flex-1"></div>

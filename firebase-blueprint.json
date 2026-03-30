@@ -97,6 +97,43 @@
         }
       },
       "required": ["userId", "messages", "code", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A scheduled task for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the task."
+        },
+        "date": {
+          "type": "string",
+          "description": "The scheduled date for the task."
+        },
+        "time": {
+          "type": "string",
+          "description": "The scheduled time for the task."
+        },
+        "description": {
+          "type": "string",
+          "description": "The description or prompt for the task."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "completed"],
+          "description": "The status of the task."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the task was created."
+        }
+      },
+      "required": ["userId", "title", "date", "time", "description", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -115,6 +152,10 @@
     "/canvas_states/{userId}": {
       "schema": { "$ref": "#/entities/CanvasState" },
       "description": "Stores the current canvas state for each user."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Stores scheduled tasks for each user."
     }
   }
 }
