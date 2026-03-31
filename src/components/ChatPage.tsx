@@ -119,18 +119,6 @@ const MessageBubble = ({ msg }: { msg: AppMessage }) => {
             )}
           </div>
         )}
-
-        {/* Generated Image */}
-        {msg.generatedImage && (
-          <div className="mt-2 rounded-2xl overflow-hidden border border-zinc-800 shadow-lg max-w-lg">
-            <img 
-              src={msg.generatedImage} 
-              alt="Generated AI" 
-              className="w-full h-auto object-contain"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-        )}
         {msg.isStreaming && !msg.content && (
           <div className="flex items-center gap-1.5 h-6 px-4 py-2 bg-zinc-800/50 rounded-full w-fit mt-2">
             <div className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -170,7 +158,14 @@ export default function ChatPage({
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full relative bg-[#121212] overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-lime-500/10 blur-[100px] animate-blob"></div>
+        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-lime-500/10 blur-[100px] animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] rounded-full bg-lime-500/10 blur-[100px] animate-blob animation-delay-4000"></div>
+      </div>
+
       {/* Clear Chat History Button */}
       <div className="absolute top-0 right-4 z-20 flex items-center gap-2">
         {currentConversationId && (
@@ -186,7 +181,7 @@ export default function ChatPage({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth custom-scrollbar relative z-10">
         <div className="max-w-3xl mx-auto flex flex-col gap-6 pb-32">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
@@ -206,7 +201,7 @@ export default function ChatPage({
       </div>
 
       {/* Input Area */}
-      <div className="flex flex-col items-center bg-[#212121] pt-8 pb-6 px-4 sm:px-6 border-t border-zinc-800">
+      <div className="flex flex-col items-center bg-transparent pt-8 pb-6 px-4 sm:px-6 border-t border-zinc-800 relative z-10">
         <div className="max-w-3xl w-full relative">
           {/* Attachments Preview */}
           {attachments.length > 0 && (
@@ -232,7 +227,7 @@ export default function ChatPage({
             </div>
           )}
 
-          <div className="relative flex flex-col bg-[#2f2f2f] border border-zinc-700 rounded-3xl shadow-lg focus-within:border-zinc-500 transition-all">
+          <div className="relative flex flex-col bg-[#1e1e1e] border border-zinc-700 rounded-3xl shadow-lg focus-within:border-zinc-500 transition-all">
             <textarea
               ref={textareaRef}
               value={input}
