@@ -112,14 +112,24 @@ export function subscribeToTasks(userId: string, callback: (tasks: Task[]) => vo
   });
 }
 
+function cleanData(data: any) {
+  const clean = { ...data };
+  Object.keys(clean).forEach(key => {
+    if (clean[key] === undefined) {
+      delete clean[key];
+    }
+  });
+  return clean;
+}
+
 export async function createTask(userId: string, taskData: Omit<Task, 'id' | 'userId' | 'createdAt' | 'status'>) {
   try {
-    const docRef = await addDoc(collection(db, 'tasks'), {
+    const docRef = await addDoc(collection(db, 'tasks'), cleanData({
       ...taskData,
       userId,
       status: 'pending',
       createdAt: serverTimestamp()
-    });
+    }));
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, 'tasks');
@@ -129,7 +139,7 @@ export async function createTask(userId: string, taskData: Omit<Task, 'id' | 'us
 
 export async function updateTaskStatus(taskId: string, status: 'pending' | 'completed') {
   try {
-    await updateDoc(doc(db, 'tasks', taskId), { status });
+    await updateDoc(doc(db, 'tasks', taskId), cleanData({ status }));
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `tasks/${taskId}`);
   }
@@ -189,12 +199,12 @@ export function subscribeToMessages(conversationId: string, userId: string, call
 
 export async function createConversation(userId: string, title: string): Promise<string> {
   try {
-    const docRef = await addDoc(collection(db, 'conversations'), {
+    const docRef = await addDoc(collection(db, 'conversations'), cleanData({
       userId,
       title,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    });
+    }));
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, 'conversations');
@@ -204,9 +214,9 @@ export async function createConversation(userId: string, title: string): Promise
 
 export async function updateConversationTimestamp(conversationId: string) {
   try {
-    await updateDoc(doc(db, 'conversations', conversationId), {
+    await updateDoc(doc(db, 'conversations', conversationId), cleanData({
       updatedAt: serverTimestamp()
-    });
+    }));
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `conversations/${conversationId}`);
   }
@@ -214,13 +224,13 @@ export async function updateConversationTimestamp(conversationId: string) {
 
 export async function saveMessage(conversationId: string, userId: string, role: string, content: string) {
   try {
-    await addDoc(collection(db, 'messages'), {
+    await addDoc(collection(db, 'messages'), cleanData({
       conversationId,
       userId,
       role,
       content,
       createdAt: serverTimestamp()
-    });
+    }));
     await updateConversationTimestamp(conversationId);
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, 'messages');

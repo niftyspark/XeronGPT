@@ -70,7 +70,8 @@ export default function App() {
         const appMsgs: AppMessage[] = dbMsgs.map(m => ({
           id: m.id,
           role: m.role,
-          content: m.content
+          content: m.content,
+          generatedImage: m.generatedImage
         }));
         setMessages(appMsgs);
       });
@@ -226,18 +227,22 @@ export default function App() {
   };
 
   const handleSend = async (
-    overrideInput?: string,
+    overrideInput?: string | React.MouseEvent | React.KeyboardEvent,
     overrideLiveBrowser?: boolean,
     overrideConversationId?: string | null,
     overrideMessages?: AppMessage[]
   ) => {
-    const currentInput = overrideInput !== undefined ? overrideInput : input;
-    if (overrideLiveBrowser !== undefined) {
+    let currentInput = input;
+    if (typeof overrideInput === 'string') {
+      currentInput = overrideInput;
+    }
+    
+    if (overrideLiveBrowser !== undefined && typeof overrideLiveBrowser === 'boolean') {
       setLiveBrowser(overrideLiveBrowser);
     }
-    const currentLiveBrowser = overrideLiveBrowser !== undefined ? overrideLiveBrowser : liveBrowser;
-    const currentMessages = overrideMessages !== undefined ? overrideMessages : messages;
-    let convoId = overrideConversationId !== undefined ? overrideConversationId : currentConversationId;
+    const currentLiveBrowser = overrideLiveBrowser !== undefined && typeof overrideLiveBrowser === 'boolean' ? overrideLiveBrowser : liveBrowser;
+    const currentMessages = overrideMessages !== undefined && Array.isArray(overrideMessages) ? overrideMessages : messages;
+    let convoId = overrideConversationId !== undefined && typeof overrideConversationId === 'string' ? overrideConversationId : currentConversationId;
 
     if ((!currentInput.trim() && attachments.length === 0) || isLoading || !user) return;
 
@@ -349,6 +354,31 @@ export default function App() {
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const newAttachments: Attachment[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            const att = await handleFileUpload(file);
+            newAttachments.push({ ...att, id: Date.now().toString() + i });
+          } catch (err) {
+            console.error('Failed to read pasted image', err);
+          }
+        }
+      }
+    }
+    
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
+    }
+  };
+
   if (!isAuthReady) {
     return <div className="flex h-screen items-center justify-center bg-[#212121] text-white"><Loader2 className="animate-spin" /></div>;
   }
@@ -420,6 +450,7 @@ export default function App() {
                   fileInputRef={fileInputRef}
                   textareaRef={textareaRef}
                   messagesEndRef={messagesEndRef}
+                  onPaste={handlePaste}
                 />
               } />
             </Routes>
