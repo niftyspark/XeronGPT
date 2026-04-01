@@ -41,6 +41,7 @@ export default function App() {
   const [convoToDelete, setConvoToDelete] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -70,8 +71,7 @@ export default function App() {
         const appMsgs: AppMessage[] = dbMsgs.map(m => ({
           id: m.id,
           role: m.role,
-          content: m.content,
-          generatedImage: m.generatedImage
+          content: m.content
         }));
         setMessages(appMsgs);
       });
@@ -147,12 +147,21 @@ export default function App() {
     return () => clearInterval(intervalId);
   }, [tasks, user, location.pathname, navigate]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (force = false) => {
+    if (!scrollContainerRef.current) return;
+    
+    const container = scrollContainerRef.current;
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+    
+    if (force || isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    const lastMessage = messages[messages.length - 1];
+    const isUserMessage = lastMessage?.role === 'user';
+    scrollToBottom(isUserMessage);
   }, [messages]);
 
   useEffect(() => {
@@ -450,6 +459,7 @@ export default function App() {
                   fileInputRef={fileInputRef}
                   textareaRef={textareaRef}
                   messagesEndRef={messagesEndRef}
+                  scrollContainerRef={scrollContainerRef}
                   onPaste={handlePaste}
                 />
               } />

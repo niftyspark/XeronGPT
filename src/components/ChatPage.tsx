@@ -25,6 +25,8 @@ interface ChatPageProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  onPaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
 }
 
 const MessageBubble = ({ msg }: { msg: AppMessage }) => {
@@ -151,7 +153,9 @@ export default function ChatPage({
   handleDeleteConversation,
   fileInputRef,
   textareaRef,
-  messagesEndRef
+  messagesEndRef,
+  scrollContainerRef,
+  onPaste
 }: ChatPageProps) {
   const navigate = useNavigate();
 
@@ -172,7 +176,10 @@ export default function ChatPage({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth custom-scrollbar">
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth custom-scrollbar"
+      >
         <div className="max-w-3xl mx-auto flex flex-col gap-6 pb-32">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
@@ -229,6 +236,7 @@ export default function ChatPage({
                   handleSend();
                 }
               }}
+              onPaste={onPaste}
               placeholder="Message AI..."
               className="w-full max-h-48 min-h-[40px] bg-transparent text-zinc-100 placeholder-zinc-400 resize-none pt-3 pb-4 pl-5 pr-12 focus:outline-none rounded-3xl"
               rows={1}

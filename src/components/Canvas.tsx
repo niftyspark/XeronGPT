@@ -23,14 +23,24 @@ export default function Canvas({ onClose, user, currentMemory }: CanvasProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (force = false) => {
+    if (!scrollContainerRef.current) return;
+    
+    const container = scrollContainerRef.current;
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+    
+    if (force || isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    const lastMessage = messages[messages.length - 1];
+    const isUserMessage = lastMessage?.role === 'user';
+    scrollToBottom(isUserMessage);
   }, [messages]);
 
   useEffect(() => {
@@ -212,7 +222,10 @@ export default function Canvas({ onClose, user, currentMemory }: CanvasProps) {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Chat Sidebar */}
         <div className={`${isSidebarOpen ? 'w-[400px]' : 'w-0'} transition-all duration-300 border-r border-white/10 flex flex-col bg-[#0d0d0d] relative z-10`}>
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar"
+          >
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
                 <div className="w-16 h-16 rounded-2xl bg-lime-400/10 flex items-center justify-center mb-4 border border-lime-400/20">
