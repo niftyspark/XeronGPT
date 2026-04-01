@@ -264,7 +264,7 @@ export default function Canvas({ onClose, user, currentMemory }: CanvasProps) {
                 rows={1}
               />
               <button
-                onClick={isLoading ? handleStop : handleSend}
+                onClick={() => isLoading ? handleStop() : handleSend()}
                 disabled={!input.trim() && !isLoading}
                 className={`absolute right-2 p-2 rounded-xl transition-all shadow-[0_0_10px_rgba(163,230,53,0.2)] ${isLoading ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-lime-400 text-black hover:bg-lime-500'}`}
               >
