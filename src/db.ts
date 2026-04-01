@@ -66,7 +66,6 @@ export type DbMessage = {
   conversationId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  generatedImage?: string;
   createdAt: Timestamp;
   userId: string;
 };
@@ -213,14 +212,13 @@ export async function updateConversationTimestamp(conversationId: string) {
   }
 }
 
-export async function saveMessage(conversationId: string, userId: string, role: string, content: string, generatedImage?: string) {
+export async function saveMessage(conversationId: string, userId: string, role: string, content: string) {
   try {
     await addDoc(collection(db, 'messages'), {
       conversationId,
       userId,
       role,
       content,
-      generatedImage,
       createdAt: serverTimestamp()
     });
     await updateConversationTimestamp(conversationId);
