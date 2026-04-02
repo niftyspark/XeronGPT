@@ -4,42 +4,46 @@
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
-    background-color: #2d3035; /* Dark gray background */
-    color: #e4e4e7;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     letter-spacing: -0.025em;
-    color: #BEE639; /* Accent color for headings */
+    color: var(--accent-color);
   }
   
   /* Neumorphic utilities */
   .neumorphic-button {
-    background: #2d3035;
+    background: var(--card-bg);
     box-shadow: 4px 4px 8px #25282c, -4px -4px 8px #35383e;
     border-radius: 12px;
     transition: all 0.3s ease;
+    color: var(--text-color);
   }
   .neumorphic-button:active {
     box-shadow: inset 4px 4px 8px #25282c, inset -4px -4px 8px #35383e;
   }
   
   .glassmorphism {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
 
   .neumorphic-card {
-    background: #2d3035;
+    background: var(--card-bg);
     box-shadow: 8px 8px 16px #25282c, -8px -8px 16px #35383e;
     border-radius: 20px;
   }
   
   .neumorphic-inset {
-    background: #2d3035;
+    background: var(--card-bg);
     box-shadow: inset 4px 4px 8px #25282c, inset -4px -4px 8px #35383e;
     border-radius: 12px;
   }
@@ -130,6 +134,49 @@
   animation-delay: 2s;
 }
 
-.animation-delay-4000 {
-  animation-delay: 4s;
+
+/* Theme Overlays */
+[data-theme='Glass Morphism'] {
+  --bg-color: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 50%, #d4fc79 100%);
+  --text-color: #1f2937;
+  --accent-color: #0f766e;
+  --card-bg: rgba(255, 255, 255, 0.3);
+  --border-color: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme='Cyberpunk'] {
+  --bg-color: #0f0f1a;
+  --text-color: #00ffcc;
+  --accent-color: #ff00ff;
+  --card-bg: #1a1a2e;
+  --border-color: #ff00ff;
+}
+
+[data-theme='Neumorphism'] {
+  --bg-color: #2d3035;
+  --text-color: #e4e4e7;
+  --accent-color: #BEE639;
+  --card-bg: #2d3035;
+  --border-color: #35383e;
+}
+
+[data-theme='Sleek Minimal'] {
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --accent-color: #333333;
+  --card-bg: #f4f4f4;
+  --border-color: #dddddd;
+}
+
+[data-theme='Colorful'] {
+  --bg-color: #2d3035;
+  --text-color: #ffffff;
+  --accent-color: #ff5e5e;
+  --card-bg: #3d4045;
+  --border-color: #55585d;
+}
+
+/* Apply theme variables */
+[data-theme] {
+  background-color: var(--bg-color);
 }

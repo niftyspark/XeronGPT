@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { MessageSquare, Plus, Calendar, Code, ChevronDown, Search, Trash2, LogOut, Menu, User, BrainCircuit } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { Conversation } from '../db';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -52,7 +53,7 @@ export default function MainLayout({
       </div>
 
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-[260px]' : 'w-0'} transition-all duration-300 flex-shrink-0 bg-[#2d3035] border-r border-[#25282c] flex flex-col overflow-hidden z-20 shadow-[4px_0_10px_#25282c]`}>
+      <div className={`${sidebarOpen ? 'w-[260px]' : 'w-0'} transition-all duration-300 flex-shrink-0 glassmorphism border-r border-white/10 flex flex-col overflow-hidden z-20`}>
         <div className="p-3 pb-0 space-y-1">
           <Link 
             to="/"
@@ -177,6 +178,7 @@ export default function MainLayout({
               <Menu size={20} />
             </button>
           </div>
+          <ThemeSwitcher />
         </header>
         <div className="flex-1 overflow-hidden relative">
           {children}

@@ -178,7 +178,7 @@ export default function ChatPage({
       {/* Chat Area */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth custom-scrollbar glassmorphism m-6 rounded-3xl border border-white/10"
       >
         <div className="max-w-3xl mx-auto flex flex-col gap-6 pb-32">
           {messages.length === 0 ? (
@@ -193,24 +193,24 @@ export default function ChatPage({
       </div>
 
       {/* Input Area */}
-      <div className="flex flex-col items-center bg-[#2d3035] pt-8 pb-6 px-4 sm:px-6">
+      <div className="flex flex-col items-center pt-8 pb-6 px-4 sm:px-6">
         <div className="max-w-3xl w-full relative">
           {/* Attachments Preview */}
           {attachments.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2 p-3 bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-800 w-full shadow-lg">
+            <div className="mb-3 flex flex-wrap gap-2 p-3 glassmorphism rounded-2xl border border-white/10 w-full shadow-lg">
               {attachments.map(att => (
-                <div key={att.id} className="relative group flex items-center gap-3 bg-black p-2 rounded-xl border border-zinc-800 max-w-[200px]">
+                <div key={att.id} className="relative group flex items-center gap-3 bg-black/20 p-2 rounded-xl border border-white/10 max-w-[200px]">
                   {att.type === 'image' ? (
                     <img src={att.data} alt={att.name} referrerPolicy="no-referrer" className="w-10 h-10 object-cover rounded-lg" />
                   ) : (
-                    <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-black/20 rounded-lg flex items-center justify-center">
                       <FileText size={18} className="text-zinc-500" />
                     </div>
                   )}
                   <div className="text-xs truncate flex-1 font-medium text-zinc-300">{att.name}</div>
                   <button 
                     onClick={() => removeAttachment(att.id)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-[#2d3035] hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100 shadow-sm neumorphic-button glassmorphism"
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-black/40 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100 shadow-sm glassmorphism"
                   >
                     <X size={14} />
                   </button>
@@ -219,7 +219,7 @@ export default function ChatPage({
             </div>
           )}
 
-          <div className="relative flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg focus-within:border-cyan-500/50 transition-all duration-300">
+          <div className="relative flex flex-col glassmorphism rounded-2xl shadow-lg transition-all duration-300">
             <textarea
               ref={textareaRef}
               value={input}
@@ -232,7 +232,7 @@ export default function ChatPage({
               }}
               onPaste={onPaste}
               placeholder="Enter command..."
-              className="w-full max-h-48 min-h-[50px] bg-transparent text-zinc-100 placeholder-zinc-600 resize-none pt-4 pb-4 pl-5 pr-14 focus:outline-none rounded-2xl font-mono text-sm"
+              className="w-full max-h-48 min-h-[50px] bg-transparent text-zinc-100 placeholder-zinc-400 resize-none pt-4 pb-4 pl-5 pr-14 focus:outline-none rounded-2xl font-mono text-sm"
               rows={1}
               style={{ height: 'auto' }}
               onInput={(e) => {
