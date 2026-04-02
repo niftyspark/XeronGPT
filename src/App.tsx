@@ -389,27 +389,39 @@ export default function App() {
   };
 
   if (!isAuthReady) {
-    return <div className="flex h-screen items-center justify-center bg-[#212121] text-white"><Loader2 className="animate-spin" /></div>;
+    return (
+      <div className="flex h-screen items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <Loader2 className="animate-spin" />
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#2d3035] text-zinc-100 font-sans relative overflow-hidden">
+      <div
+        className="flex h-screen items-center justify-center font-sans relative overflow-hidden"
+        data-theme="Neumorphism"
+        style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+      >
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#BEE639]/5 blur-[120px] animate-blob"></div>
-          <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#BEE639]/5 blur-[120px] animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] rounded-full bg-[#BEE639]/5 blur-[120px] animate-blob animation-delay-4000"></div>
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] animate-blob" style={{ backgroundColor: 'var(--blob-color)' }} />
+          <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] animate-blob animation-delay-2000" style={{ backgroundColor: 'var(--blob-color)' }} />
+          <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] rounded-full blur-[120px] animate-blob animation-delay-4000" style={{ backgroundColor: 'var(--blob-color)' }} />
         </div>
 
         <div className="text-center max-w-md p-10 neumorphic-card z-10">
-          <div className="w-20 h-20 neumorphic-inset rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-inner border border-zinc-700">
-            <Bot size={40} className="text-[#BEE639]" />
+          <div
+            className="w-20 h-20 neumorphic-inset rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-inner"
+            style={{ border: '1px solid var(--border-secondary)' }}
+          >
+            <Bot size={40} style={{ color: 'var(--accent)' }} />
           </div>
-          <h1 className="text-3xl font-bold mb-4 text-[#BEE639] tracking-tight">System Access</h1>
-          <p className="text-zinc-400 mb-10 font-mono text-sm">Initialize connection to the neural network to begin.</p>
+          <h1 className="text-3xl font-bold mb-4 tracking-tight" style={{ color: 'var(--accent)' }}>System Access</h1>
+          <p className="mb-10 font-mono text-sm" style={{ color: 'var(--text-secondary)' }}>Initialize connection to the neural network to begin.</p>
           <button 
             onClick={handleLogin}
-            className="w-full py-4 px-6 neumorphic-button text-[#BEE639] font-bold rounded-xl hover:bg-[#35383e] transition-all duration-300 flex items-center justify-center gap-3"
+            className="w-full py-4 px-6 neumorphic-button font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-3"
+            style={{ color: 'var(--accent)' }}
           >
             <User size={20} />
             Connect Identity

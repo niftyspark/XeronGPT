@@ -24,32 +24,68 @@ export default function ConfirmModal({
 }: ConfirmModalProps) {
   if (!isOpen) return null;
 
-  const variantStyles = {
-    danger: 'bg-red-500 hover:bg-red-600 text-white',
-    warning: 'bg-amber-500 hover:bg-amber-600 text-white',
-    info: 'bg-lime-400 hover:bg-lime-500 text-black'
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'danger':
+        return {
+          iconBg: 'var(--danger-muted)',
+          iconColor: 'var(--danger)',
+          buttonBg: 'var(--danger)',
+          buttonColor: '#ffffff',
+        };
+      case 'warning':
+        return {
+          iconBg: 'rgba(245, 158, 11, 0.1)',
+          iconColor: '#f59e0b',
+          buttonBg: '#f59e0b',
+          buttonColor: '#ffffff',
+        };
+      case 'info':
+      default:
+        return {
+          iconBg: 'var(--accent-muted)',
+          iconColor: 'var(--accent)',
+          buttonBg: 'var(--accent)',
+          buttonColor: 'var(--accent-text)',
+        };
+    }
   };
 
+  const styles = getVariantStyles();
+
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div
+        className="rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}
+      >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${variant === 'danger' ? 'bg-red-500/10 text-red-500' : variant === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-lime-400/10 text-lime-400'}`}>
+              <div
+                className="p-2 rounded-lg"
+                style={{ backgroundColor: styles.iconBg, color: styles.iconColor }}
+              >
                 <AlertTriangle size={20} />
               </div>
-              <h3 className="text-lg font-bold text-white uppercase tracking-wider">{title}</h3>
+              <h3 className="text-lg font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>{title}</h3>
             </div>
-            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+            <button
+              onClick={onClose}
+              style={{ color: 'var(--text-tertiary)' }}
+              className="transition-colors"
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
+            >
               <X size={20} />
             </button>
           </div>
-          <p className="text-zinc-400 text-sm leading-relaxed mb-8">{message}</p>
+          <p className="text-sm leading-relaxed mb-8" style={{ color: 'var(--text-secondary)' }}>{message}</p>
           <div className="flex items-center gap-3">
             <button 
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-sm font-bold transition-all"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+              style={{ backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
             >
               {cancelText}
             </button>
@@ -58,7 +94,8 @@ export default function ConfirmModal({
                 onConfirm();
                 onClose();
               }}
-              className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${variantStyles[variant]}`}
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+              style={{ backgroundColor: styles.buttonBg, color: styles.buttonColor }}
             >
               {confirmText}
             </button>

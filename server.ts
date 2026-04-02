@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config({ path: '.env.local' });
+dotenv.config(); // also load .env as fallback
+
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import * as cheerio from "cheerio";

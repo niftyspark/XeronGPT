@@ -1,50 +1,221 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+
+/* ===========================
+   THEME DEFINITIONS
+   =========================== */
+
+/*
+  Variable Reference:
+  --bg-primary:       Main page background
+  --bg-secondary:     Sidebar, card backgrounds
+  --bg-tertiary:      Inset panels, input fields, code blocks
+  --bg-hover:         Hover state for buttons/items
+  --bg-active:        Active/selected state
+  --text-primary:     Main body text
+  --text-secondary:   Muted/secondary text
+  --text-tertiary:    Very muted text (placeholders, hints)
+  --accent:           Primary accent color (buttons, highlights, headings)
+  --accent-hover:     Accent hover state
+  --accent-muted:     Accent at low opacity (backgrounds, badges)
+  --accent-text:      Text color on accent backgrounds
+  --border-primary:   Main borders
+  --border-secondary: Subtle borders
+  --shadow-dark:      Neumorphic dark shadow
+  --shadow-light:     Neumorphic light shadow
+  --danger:           Red/destructive color
+  --danger-muted:     Danger at low opacity
+  --scrollbar-thumb:  Custom scrollbar color
+  --blob-color:       Background animated blob color
+  --glass-bg:         Glassmorphism background
+  --glass-border:     Glassmorphism border
+*/
+
+/* --- 1. NEUMORPHISM (Default) ---
+   A dark, tactile theme with soft raised/inset surfaces and lime green accent. */
+[data-theme='Neumorphism'] {
+  --bg-primary: #2d3035;
+  --bg-secondary: #2d3035;
+  --bg-tertiary: #25282c;
+  --bg-hover: #35383e;
+  --bg-active: #25282c;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --accent: #BEE639;
+  --accent-hover: #d4f94f;
+  --accent-muted: rgba(190, 230, 57, 0.12);
+  --accent-text: #1a1a1a;
+  --border-primary: #3f4249;
+  --border-secondary: #35383e;
+  --shadow-dark: #1e2024;
+  --shadow-light: #3c4048;
+  --danger: #ef4444;
+  --danger-muted: rgba(239, 68, 68, 0.1);
+  --scrollbar-thumb: rgba(190, 230, 57, 0.25);
+  --blob-color: rgba(190, 230, 57, 0.06);
+  --glass-bg: rgba(45, 48, 53, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* --- 2. GLASS MORPHISM ---
+   Frosted glass aesthetic with a cool blue/teal gradient feel, translucent panels. */
+[data-theme='Glass Morphism'] {
+  --bg-primary: #0f172a;
+  --bg-secondary: rgba(15, 23, 42, 0.6);
+  --bg-tertiary: rgba(30, 41, 59, 0.5);
+  --bg-hover: rgba(51, 65, 85, 0.5);
+  --bg-active: rgba(30, 41, 59, 0.7);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-muted: rgba(56, 189, 248, 0.12);
+  --accent-text: #0c1524;
+  --border-primary: rgba(148, 163, 184, 0.15);
+  --border-secondary: rgba(148, 163, 184, 0.08);
+  --shadow-dark: rgba(0, 0, 0, 0.3);
+  --shadow-light: rgba(255, 255, 255, 0.03);
+  --danger: #f87171;
+  --danger-muted: rgba(248, 113, 113, 0.1);
+  --scrollbar-thumb: rgba(56, 189, 248, 0.25);
+  --blob-color: rgba(56, 189, 248, 0.08);
+  --glass-bg: rgba(15, 23, 42, 0.4);
+  --glass-border: rgba(148, 163, 184, 0.12);
+}
+
+/* --- 3. CYBERPUNK ---
+   Neon-soaked, high-contrast dark theme with magenta/cyan palette and gritty digital feel. */
+[data-theme='Cyberpunk'] {
+  --bg-primary: #0a0a12;
+  --bg-secondary: #12121e;
+  --bg-tertiary: #1a1a2e;
+  --bg-hover: #22223a;
+  --bg-active: #1a1a2e;
+  --text-primary: #e0e0ff;
+  --text-secondary: #8888bb;
+  --text-tertiary: #5555888;
+  --accent: #ff2e97;
+  --accent-hover: #ff5cb0;
+  --accent-muted: rgba(255, 46, 151, 0.12);
+  --accent-text: #ffffff;
+  --border-primary: rgba(255, 46, 151, 0.25);
+  --border-secondary: rgba(255, 46, 151, 0.1);
+  --shadow-dark: #050508;
+  --shadow-light: #1e1e32;
+  --danger: #ff4444;
+  --danger-muted: rgba(255, 68, 68, 0.12);
+  --scrollbar-thumb: rgba(255, 46, 151, 0.3);
+  --blob-color: rgba(255, 46, 151, 0.06);
+  --glass-bg: rgba(18, 18, 30, 0.7);
+  --glass-border: rgba(255, 46, 151, 0.15);
+}
+
+/* --- 4. SLEEK MINIMAL ---
+   A clean, light theme with generous whitespace, neutral grays and a refined indigo accent. */
+[data-theme='Sleek Minimal'] {
+  --bg-primary: #f8f9fb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f3f5;
+  --bg-hover: #e9ecef;
+  --bg-active: #e2e5e9;
+  --text-primary: #1a1a2e;
+  --text-secondary: #5c5f6a;
+  --text-tertiary: #9ca0ab;
+  --accent: #4f46e5;
+  --accent-hover: #6366f1;
+  --accent-muted: rgba(79, 70, 229, 0.08);
+  --accent-text: #ffffff;
+  --border-primary: #dfe2e7;
+  --border-secondary: #ebedf0;
+  --shadow-dark: #d1d5db;
+  --shadow-light: #ffffff;
+  --danger: #dc2626;
+  --danger-muted: rgba(220, 38, 38, 0.06);
+  --scrollbar-thumb: rgba(79, 70, 229, 0.2);
+  --blob-color: rgba(79, 70, 229, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(0, 0, 0, 0.06);
+}
+
+/* --- 5. COLORFUL ---
+   A vibrant dark theme with warm orange/amber accent, rich deep backgrounds and energetic feel. */
+[data-theme='Colorful'] {
+  --bg-primary: #1a1020;
+  --bg-secondary: #221530;
+  --bg-tertiary: #2a1c38;
+  --bg-hover: #352445;
+  --bg-active: #2a1c38;
+  --text-primary: #f5f0ff;
+  --text-secondary: #b8a8d0;
+  --text-tertiary: #7e6a98;
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+  --accent-muted: rgba(245, 158, 11, 0.12);
+  --accent-text: #1a1020;
+  --border-primary: rgba(184, 168, 208, 0.15);
+  --border-secondary: rgba(184, 168, 208, 0.08);
+  --shadow-dark: #110a18;
+  --shadow-light: #2f2040;
+  --danger: #fb7185;
+  --danger-muted: rgba(251, 113, 133, 0.1);
+  --scrollbar-thumb: rgba(245, 158, 11, 0.3);
+  --blob-color: rgba(245, 158, 11, 0.06);
+  --glass-bg: rgba(34, 21, 48, 0.7);
+  --glass-border: rgba(184, 168, 208, 0.1);
+}
+
+
+/* ===========================
+   BASE STYLES
+   =========================== */
 
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     overflow: hidden;
-    transition: background-color 0.3s, color 0.3s;
+    transition: background-color 0.4s ease, color 0.4s ease;
   }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     letter-spacing: -0.025em;
-    color: var(--accent-color);
+    color: var(--accent);
   }
-  
+
   /* Neumorphic utilities */
   .neumorphic-button {
-    background: var(--card-bg);
-    box-shadow: 4px 4px 8px #25282c, -4px -4px 8px #35383e;
+    background: var(--bg-secondary);
+    box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
     border-radius: 12px;
     transition: all 0.3s ease;
-    color: var(--text-color);
+    color: var(--text-primary);
   }
   .neumorphic-button:active {
-    box-shadow: inset 4px 4px 8px #25282c, inset -4px -4px 8px #35383e;
+    box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
   }
-  
+
   .glassmorphism {
-    background: var(--card-bg);
+    background: var(--glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--glass-border);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
 
   .neumorphic-card {
-    background: var(--card-bg);
-    box-shadow: 8px 8px 16px #25282c, -8px -8px 16px #35383e;
+    background: var(--bg-secondary);
+    box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
     border-radius: 20px;
   }
-  
+
   .neumorphic-inset {
-    background: var(--card-bg);
-    box-shadow: inset 4px 4px 8px #25282c, inset -4px -4px 8px #35383e;
+    background: var(--bg-secondary);
+    box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
     border-radius: 12px;
   }
 
@@ -61,8 +232,8 @@
 
   /* Hide scrollbar for IE, Edge and Firefox */
   html, body, #root, * {
-    -ms-overflow-style: none !important;  /* IE and Edge */
-    scrollbar-width: none !important;  /* Firefox */
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
 
   /* Custom Scrollbar */
@@ -77,19 +248,20 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(190, 230, 57, 0.2) !important;
+    background: var(--scrollbar-thumb) !important;
     border-radius: 10px !important;
     transition: background 0.2s ease;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(190, 230, 57, 0.4) !important;
+    background: var(--accent) !important;
+    opacity: 0.5;
   }
 
   /* Firefox */
   .custom-scrollbar {
     scrollbar-width: thin !important;
-    scrollbar-color: rgba(190, 230, 57, 0.2) transparent !important;
+    scrollbar-color: var(--scrollbar-thumb) transparent !important;
   }
 
   pre {
@@ -112,7 +284,7 @@
   --animate-blob: blob 7s infinite;
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  --color-accent: #BEE639;
+  --color-accent: var(--accent);
 }
 
 @keyframes blob {
@@ -134,49 +306,44 @@
   animation-delay: 2s;
 }
 
-
-/* Theme Overlays */
-[data-theme='Glass Morphism'] {
-  --bg-color: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 50%, #d4fc79 100%);
-  --text-color: #1f2937;
-  --accent-color: #0f766e;
-  --card-bg: rgba(255, 255, 255, 0.3);
-  --border-color: rgba(255, 255, 255, 0.4);
+.animation-delay-4000 {
+  animation-delay: 4s;
 }
 
-[data-theme='Cyberpunk'] {
-  --bg-color: #0f0f1a;
-  --text-color: #00ffcc;
-  --accent-color: #ff00ff;
-  --card-bg: #1a1a2e;
-  --border-color: #ff00ff;
-}
-
-[data-theme='Neumorphism'] {
-  --bg-color: #2d3035;
-  --text-color: #e4e4e7;
-  --accent-color: #BEE639;
-  --card-bg: #2d3035;
-  --border-color: #35383e;
-}
-
-[data-theme='Sleek Minimal'] {
-  --bg-color: #ffffff;
-  --text-color: #333333;
-  --accent-color: #333333;
-  --card-bg: #f4f4f4;
-  --border-color: #dddddd;
-}
-
-[data-theme='Colorful'] {
-  --bg-color: #2d3035;
-  --text-color: #ffffff;
-  --accent-color: #ff5e5e;
-  --card-bg: #3d4045;
-  --border-color: #55585d;
-}
-
-/* Apply theme variables */
+/* Apply theme background */
 [data-theme] {
-  background-color: var(--bg-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Smooth theme transition on all themed elements */
+[data-theme] *,
+[data-theme] *::before,
+[data-theme] *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Cyberpunk specific glow effects */
+[data-theme='Cyberpunk'] .neumorphic-button {
+  box-shadow: 0 0 8px rgba(255, 46, 151, 0.1), 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+}
+[data-theme='Cyberpunk'] .neumorphic-card {
+  box-shadow: 0 0 15px rgba(255, 46, 151, 0.05), 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+}
+
+/* Glass Morphism specific blur */
+[data-theme='Glass Morphism'] .glassmorphism {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Sleek Minimal - softer shadows */
+[data-theme='Sleek Minimal'] .neumorphic-button {
+  box-shadow: 2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light);
+}
+[data-theme='Sleek Minimal'] .neumorphic-card {
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+}
+[data-theme='Sleek Minimal'] .neumorphic-inset {
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
 }
