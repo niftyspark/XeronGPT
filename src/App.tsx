@@ -394,25 +394,25 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#111] text-zinc-100 font-sans relative overflow-hidden">
+      <div className="flex h-screen items-center justify-center bg-[#2d3035] text-zinc-100 font-sans relative overflow-hidden">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-lime-500/10 blur-[100px] animate-blob"></div>
-          <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 blur-[100px] animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] rounded-full bg-teal-500/10 blur-[100px] animate-blob animation-delay-4000"></div>
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#BEE639]/5 blur-[120px] animate-blob"></div>
+          <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#BEE639]/5 blur-[120px] animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] rounded-full bg-[#BEE639]/5 blur-[120px] animate-blob animation-delay-4000"></div>
         </div>
 
-        <div className="text-center max-w-md p-8 bg-black/40 backdrop-blur-xl rounded-3xl shadow-xl border border-white/5 z-10">
-          <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-zinc-700">
-            <Bot size={32} className="text-lime-400" />
+        <div className="text-center max-w-md p-10 neumorphic-card z-10">
+          <div className="w-20 h-20 neumorphic-inset rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-inner border border-zinc-700">
+            <Bot size={40} className="text-[#BEE639]" />
           </div>
-          <h1 className="text-2xl font-bold mb-4 text-lime-400">Welcome to AI Chat</h1>
-          <p className="text-zinc-400 mb-8">Sign in to start chatting, save your history, and access advanced AI models with web search capabilities.</p>
+          <h1 className="text-3xl font-bold mb-4 text-[#BEE639] tracking-tight">System Access</h1>
+          <p className="text-zinc-400 mb-10 font-mono text-sm">Initialize connection to the neural network to begin.</p>
           <button 
             onClick={handleLogin}
-            className="w-full py-3 px-4 bg-lime-400 text-black font-semibold rounded-xl hover:bg-lime-500 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 px-6 neumorphic-button text-[#BEE639] font-bold rounded-xl hover:bg-[#35383e] transition-all duration-300 flex items-center justify-center gap-3"
           >
             <User size={20} />
-            Sign in with Google
+            Connect Identity
           </button>
         </div>
       </div>
